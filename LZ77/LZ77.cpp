@@ -5,9 +5,9 @@ vector<char> LZ77::loadFile(const string& filename) {
     // Open the file
     ifstream file(filename, ios::binary);
     if (!file.good()) {
-        cout << "Error Opening File... FILE NOT GOOD?" << strerror(errno) << endl;;
+        cout << "Error Opening File... FILE NOT GOOD?" << endl;;
         //runtime_error("Error Opening File...");
-        return vector<char>();
+        return {};
     }
 
     // Read the entire file into a vector of chars
