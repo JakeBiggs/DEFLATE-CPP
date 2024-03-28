@@ -1,0 +1,2 @@
+/usr/bin/ar qc libLZ77.a CMakeFiles/LZ77.dir/LZ77.cpp.o
+/usr/bin/ranlib libLZ77.a

@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="COMP203"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\Huffman\;CMake Files\LZ77\;CMake Files\main\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\usr\;CMake Files\..\..\..\usr\local\;CMake Files\..\..\..\usr\local\lib\;CMake Files\..\..\..\usr\local\lib\cmake\;CMake Files\..\..\..\usr\local\lib\cmake\benchmark\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Huffman">
+				<Option output="/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/libHuffman.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/projects/DEFLATE-CPP"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 Huffman"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Huffman/fast">
+				<Option output="/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/libHuffman.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/projects/DEFLATE-CPP"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 Huffman/fast"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/Huffman/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="LZ77">
+				<Option output="/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/libLZ77.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/projects/DEFLATE-CPP"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 LZ77"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="LZ77/fast">
+				<Option output="/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/libLZ77.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/projects/DEFLATE-CPP"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 LZ77/fast"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/LZ77/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="main">
+				<Option output="/home/projects/DEFLATE-CPP/cmake-build-debug/main/main" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug/main"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DBENCHMARK_STATIC_DEFINE"/>
+					<Add directory="/home/projects/DEFLATE-CPP"/>
+					<Add directory="/home/projects/DEFLATE-CPP/Huffman"/>
+					<Add directory="/home/projects/DEFLATE-CPP/LZ77"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 main"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="main/fast">
+				<Option output="/home/projects/DEFLATE-CPP/cmake-build-debug/main/main" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/projects/DEFLATE-CPP/cmake-build-debug/main"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DBENCHMARK_STATIC_DEFINE"/>
+					<Add directory="/home/projects/DEFLATE-CPP"/>
+					<Add directory="/home/projects/DEFLATE-CPP/Huffman"/>
+					<Add directory="/home/projects/DEFLATE-CPP/LZ77"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 main/fast"/>
+					<CompileFile command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j8 -f &quot;/home/projects/DEFLATE-CPP/cmake-build-debug/main/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/projects/DEFLATE-CPP/Huffman/Huffman.cpp">
+			<Option target="Huffman"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/Huffman/Huffman.h">
+			<Option target="Huffman"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/LZ77/LZ77.cpp">
+			<Option target="LZ77"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/LZ77/LZ77.h">
+			<Option target="LZ77"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/main/main.cpp">
+			<Option target="main"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/main/main.h">
+			<Option target="main"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/Huffman/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\Huffman\"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/LZ77/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\LZ77\"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/main/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\main\"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/../../../usr/local/lib/cmake/benchmark/benchmarkConfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\benchmark\"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/../../../usr/local/lib/cmake/benchmark/benchmarkConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\benchmark\"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/../../../usr/local/lib/cmake/benchmark/benchmarkTargets-release.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\benchmark\"/>
+		</Unit>
+		<Unit filename="/home/projects/DEFLATE-CPP/../../../usr/local/lib/cmake/benchmark/benchmarkTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\benchmark\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

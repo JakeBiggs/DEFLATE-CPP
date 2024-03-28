@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/main.dir/main.cpp.o -o main  /usr/local/lib/libbenchmark.a ../LZ77/libLZ77.a ../Huffman/libHuffman.a -lrt 

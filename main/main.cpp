@@ -10,7 +10,35 @@ using namespace std;
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <benchmark/benchmark.h>
 
+
+static void BM_Deflate(benchmark::State &s){
+    LZ77 lz;
+    Huffman huff;
+    int window_size= 4096;
+    vector<char> data = lz.loadFile("bee-movie-100.txt");
+
+    for (auto _ : s){
+        //Lz77 compression:
+        vector<char> lzCompressed = lz.compress(data, window_size);
+
+        //Huffman compression:
+        map<char, string> huffmanCodes = huff.generateHuffmanCodes(lzCompressed);
+        vector<char> huffCompressed = huff.encode(lzCompressed, huffmanCodes);
+
+        //Decompression:
+        vector<char> huffDecompressed = huff.decode(huffCompressed, huffmanCodes);
+        vector<LZ77Token> tokens = lz.byteStreamToTokens(huffDecompressed);
+        vector<char> decompressed = lz.decompressToBytes(tokens);
+        lz.saveFile("output.txt", decompressed);
+    }
+}
+
+BENCHMARK(BM_Deflate);
+BENCHMARK_MAIN();
+
+/*
 int main() {
 
 	// LEMPEL ZIV 77
@@ -20,23 +48,12 @@ int main() {
 	// Compress the file
 	vector<char> compressed = lz.compress(lz.loadFile("bee-movie.txt"), window_size);
 	cout << "LZ77 Compression Complete" << endl;
-	/*lz.saveFile("output.bin", compressed);
-
-	// Decompress the file
-	vector<LZ77Token> tokens = lz.byteStreamToTokens(lz.loadFile("output.bin"));
-	vector<char> decompressed = lz.decompressToBytes(tokens);
-	lz.saveFile("output.txt", decompressed);
-	*/
 
 	// HUFFMAN
 	Huffman huff;
-	//vector<char> huffTest = { 'a', 'b', 'c', 'a', 'b', 'c' , 'b', 'b', 'a', 'd'};
-    //map<char, int> freq = huff.countBytes(huffTest);
-    //vector<Node*> nodes;
 
-
-	map<char, int> freq = huff.countBytes(compressed);
-	cout << "Huff counted bytes" << endl;
+	//map<char, int> freq = huff.countBytes(compressed);
+	//cout << "Huff counted bytes" << endl;
 	map<char, string> huffmanCodes = huff.generateHuffmanCodes(compressed);
 	cout << "Generated Huffman Codes" << endl;
 	vector<char> huffCompressed = huff.encode(compressed, huffmanCodes);
@@ -60,4 +77,5 @@ int main() {
 	cout << "Saved Output" << endl;
 
 }
+*/
 

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libHuffman.a CMakeFiles/Huffman.dir/Huffman.cpp.o
+/usr/bin/ranlib libHuffman.a

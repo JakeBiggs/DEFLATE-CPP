@@ -34,6 +34,7 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
     //The sliding window is being defined implicitly from position i-window_size to i
 
     // Loop over the input data
+    //int input_size = input.size();
     while (i < input.size()) {
         uint16_t match_distance = 0;
         uint16_t match_length = 0;
@@ -60,7 +61,7 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
         // Get the next character after the match
         // If at the end of the input, use a null character
         //char next = input[i + match_length];
-        char next = (i + match_length < input.size()) ? input[i + match_length] : '\0'; 
+        char next = (i + match_length < input.size()) ? input[i + match_length] : '\0';
 
         // Add the LZ77 token to the output
         output.push_back({ match_distance, match_length, next });
