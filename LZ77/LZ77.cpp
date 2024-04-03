@@ -5,7 +5,7 @@ vector<char> LZ77::loadFile(const string& filename) {
     // Open the file
     ifstream file(filename, ios::binary);
     if (!file.good()) {
-        cout << "Error Opening File... FILE NOT GOOD?" << endl;;
+        cout << "Error Opening File... FILE NOT GOOD?" << endl;
         //runtime_error("Error Opening File...");
         return {};
     }
@@ -25,57 +25,53 @@ void LZ77::saveFile(const string& filename, const vector<char>& byteStream) {
     outfile.close();
 }
 
-
 vector<char> LZ77::compress(const vector<char>& input, int window_size) {
     vector<LZ77Token> output;
-    int i = 0; //i represents the current position in the input data
-               // j represents the start of the match in the sliding window
-               // k represents the length of the match
-    //The sliding window is being defined implicitly from position i-window_size to i
+    TrieNode* root = new TrieNode();
+    int i = 0;
 
-    // Loop over the input data
-    //int input_size = input.size();
     while (i < input.size()) {
-        uint16_t match_distance = 0;
-        uint16_t match_length = 0;
+        TrieNode* node = root;
+        int match_distance = 0, match_length = 0, j = i;
 
-        // Search for a match in the  sliding window
-        for (int j = i - window_size; j < i; j++) {
-            if (j < 0) continue; // Skip the invalid index
-
-            int k = 0; //k represents the length of the match
-            // Extend the match as far as possible:
-            // j+k = distance to end of the match
-            // i+k = distance to end of the match
-            // Checking against input.size() ensures we don't go out of bounds of the data
-            while (j + k < input.size() && i + k < input.size() && input[j + k] == input[i + k] && k < window_size) {
-                k++; // Increment the length of the match
-            }
-            // If this match is longer than the previous best match, update the best match
-            if (k > match_length) {
-                match_distance = i - j;
-                match_length = k;
+        // Search for the longest match in the sliding window
+        for (; j < i + window_size && j < input.size(); ++j) {
+            if (node->children[input[j]] == nullptr) break;
+            node = node->children[input[j]];
+            if (!node->indices.empty() && j - node->indices[0] <= window_size) {
+                match_distance = i - node->indices[0];
+                match_length = j - i + 1;
             }
         }
 
-        // Get the next character after the match
-        // If at the end of the input, use a null character
-        //char next = input[i + match_length];
-        char next = (i + match_length < input.size()) ? input[i + match_length] : '\0';
+        // Update the window
+        node = root;
+        for (int k = i - match_length; k <= j && k < input.size(); ++k) {
+            if (k >= 0) {
+                if (node->children[input[k]] == nullptr) {
+                    node->children[input[k]] = new TrieNode();
+                }
+                node = node->children[input[k]];
+                node->indices.push_back(k);
+                if (node->indices.size() > 1 && k - node->indices[0] > window_size) {
+                    node->indices.erase(node->indices.begin());
+                }
+            }
+        }
 
         // Add the LZ77 token to the output
-        output.push_back({ match_distance, match_length, next });
+        if (i + match_length < input.size()) {
+            output.push_back(LZ77Token(match_distance, match_length, input[i + match_length]));
+        }
 
-        // Move the window
         i += match_length + 1;
     }
 
-    //Create a vector to hold a bytestream (needed for huffman)
+    // Convert the output tokens to a byte stream
     vector<char> byteStream = tokensToByteStream(output);
 
     return byteStream;
 }
-
 
 vector<char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
     vector<char> output;

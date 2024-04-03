@@ -17,21 +17,34 @@ static void BM_Deflate(benchmark::State &s){
     LZ77 lz;
     Huffman huff;
     int window_size= 4096;
-    vector<char> data = lz.loadFile("bee-movie-100.txt");
-
+    cout << "starting..." << endl;
+ vector<char> data = lz.loadFile("bee-movie-100.txt");
     for (auto _ : s){
         //Lz77 compression:
+        cout << "LZ77 Compression starting..." << endl;
         vector<char> lzCompressed = lz.compress(data, window_size);
+        cout << "LZ77 Compression Complete..." << endl;
 
         //Huffman compression:
+
         map<char, string> huffmanCodes = huff.generateHuffmanCodes(lzCompressed);
+        cout << "Generated Huffman Codes" << endl;
         vector<char> huffCompressed = huff.encode(lzCompressed, huffmanCodes);
+        cout << "Huffman Encoded" << endl;
 
         //Decompression:
+        cout << "Beginning Decompression..." << endl;
         vector<char> huffDecompressed = huff.decode(huffCompressed, huffmanCodes);
+        cout << "Huffman decoded" << endl;
+
         vector<LZ77Token> tokens = lz.byteStreamToTokens(huffDecompressed);
+        cout << "Tokens decoded" << endl;
+
         vector<char> decompressed = lz.decompressToBytes(tokens);
+        cout << "LZ77 decoded" << endl;
+
         lz.saveFile("output.txt", decompressed);
+        cout << "Output Saved!" <<endl;
     }
 }
 
