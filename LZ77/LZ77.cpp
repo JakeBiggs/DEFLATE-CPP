@@ -27,6 +27,7 @@ void LZ77::saveFile(const string& filename, const vector<char>& byteStream) {
 
 vector<char> LZ77::compress(const vector<char>& input, int window_size) {
     vector<LZ77Token> output;
+    deque<TrieNode*> window;
     TrieNode* root = new TrieNode();
     int i = 0;
 
@@ -54,16 +55,32 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
         }
 
         // Update the window
+        if (window.size() > window_size) {
+            TrieNode* old_node = window.front();
+            window.pop_front();
+            delete old_node;  // Delete the TrieNode that fell out of the window
+        }
+        TrieNode* new_node = new TrieNode();
+        window.push_back(new_node);
         node = root;
         for (int k = i - match_length; k <= j && k < input.size(); ++k) {
             if (k >= 0) {
                 if (node->children[input[k]] == nullptr) {
-                    node->children[input[k]] = new TrieNode();
+                    node->children[input[k]] = new_node;
                 }
-                node = node->children[input[k]];
+                else{
+                    node = node->children[input[k]];
+                }
                 node->indices.push_back(k);
             }
         }
+    }
+
+    // Cleanup: Delete remaining nodes in the window
+    while (!window.empty()) {
+        TrieNode* node = window.front();
+        window.pop_front();
+        delete node;
     }
 
     // Convert the output tokens to a byte stream
@@ -71,7 +88,6 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
 
     return byteStream;
 }
-
 vector<char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
     vector<char> output;
     for (const LZ77Token& token : compressed) {
