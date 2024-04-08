@@ -4,7 +4,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <map>
-
+#include <deque>
 using namespace std;
 
 struct TrieNode {

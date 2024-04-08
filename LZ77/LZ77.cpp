@@ -40,8 +40,17 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
             node = node->children[input[j]];
             if (!node->indices.empty() && j - node->indices[0] <= window_size) {
                 match_distance = i - node->indices[0];
-                match_length = j - i + 1;
+                match_length = j - i + 1;  // Include the last character that was matched
             }
+        }
+
+        // Add the LZ77 token to the output
+        if (match_length > 0 && i + match_length <= input.size()) {
+            output.push_back(LZ77Token(match_distance, match_length, input[i + match_length - 1]));
+            i += match_length;  // Increment i by match_length if a match was found
+        } else if (i < input.size()) {
+            output.push_back(LZ77Token(0, 0, input[i]));  // If no match was found, create a token with the current character
+            i++;
         }
 
         // Update the window
@@ -53,18 +62,8 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
                 }
                 node = node->children[input[k]];
                 node->indices.push_back(k);
-                if (node->indices.size() > 1 && k - node->indices[0] > window_size) {
-                    node->indices.erase(node->indices.begin());
-                }
             }
         }
-
-        // Add the LZ77 token to the output
-        if (i + match_length < input.size()) {
-            output.push_back(LZ77Token(match_distance, match_length, input[i + match_length]));
-        }
-
-        i += match_length + 1;
     }
 
     // Convert the output tokens to a byte stream
@@ -75,19 +74,23 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
 
 vector<char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
     vector<char> output;
-        for (const LZ77Token& token : compressed) {
-            if (token.length > 0) {
-                // Copy the match from the specified distance back in the output
-                int start = output.size() - token.offset;
-                for (int i = 0; i < token.length && start + i < output.size(); ++i) {
-                    output.push_back(output[start + i]);
-                }
+    for (const LZ77Token& token : compressed) {
+        if (token.length > 0) {
+            // Copy the match from the specified distance back in the output
+            int start = output.size() - token.offset;
+            if (start < 0 || token.length > output.size()) {
+                throw std::runtime_error("Invalid LZ77 token");
             }
-            // Append the next character
-            output.push_back(token.next);
+            for (int i = 0; i < token.length; ++i) {
+                output.push_back(output[start + i]);
+            }
         }
-        return output;
+        // Append the next character
+        output.push_back(token.next);
     }
+    return output;
+}
+
 void LZ77::decompressToFile(const vector<char>& compressedData, const string& filename) {
     vector<LZ77Token> tokens = byteStreamToTokens(compressedData);
 
@@ -103,6 +106,9 @@ vector<char> LZ77::tokensToByteStream(const vector<LZ77Token>& tokens) {
 
     // Convert the LZ77 tokens to a byte stream
     for (const LZ77Token& token : tokens) {
+        if (token.offset > UINT16_MAX || token.length > UINT16_MAX) {
+            throw std::runtime_error("Offset or length too large for 16 bits");
+        }
         uint16_t offset = token.offset;
         uint16_t length = token.length;
         char next = token.next;
@@ -121,25 +127,31 @@ vector<char> LZ77::tokensToByteStream(const vector<LZ77Token>& tokens) {
     return byteStream;
 }
 
+
+
 vector<LZ77Token> LZ77::byteStreamToTokens(const vector<char>& byteStream) {
     vector<LZ77Token> tokens;
 
+    // Check if the size of the input vector is a multiple of 5
+    if (byteStream.size() % 5 != 0) {
+        throw std::runtime_error("Invalid byte stream size");
+    }
+
     // Convert the byte stream to LZ77 tokens
-    // Every
-    for (size_t i = 0; i< byteStream.size(); i += 5){
+    for (size_t i = 0; i < byteStream.size(); i += 5) {
         // Convert the first 2 bytes to a 16-bit offset using bitwise OR
-        // Static casts to unsigned char before uint16_t to avoid fuckery (sign extension?)
-        uint16_t offset = static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i])) | 
+        uint16_t offset = static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i])) |
                           (static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i + 1])) << 8);
 
         // Convert bytes 3 and 4 to a 16-bit length using bitwise OR
-        uint16_t length = static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i + 2])) | 
+        uint16_t length = static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i + 2])) |
                           (static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i + 3])) << 8);
-    
-        //Get next char
+
+        // Get next char
         char next = byteStream[i + 4];
 
         tokens.push_back(LZ77Token(offset, length, next));
     }
+
     return tokens;
 }
