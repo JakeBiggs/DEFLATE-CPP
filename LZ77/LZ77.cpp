@@ -26,52 +26,60 @@ void LZ77::saveFile(const string& filename, const vector<char>& byteStream) {
 }
 
 vector<char> LZ77::compress(const vector<char>& input, int window_size) {
-    vector<LZ77Token> output;
-    deque<TrieNode*> window;
-    TrieNode* root = new TrieNode();
-    int i = 0;
+    vector<LZ77Token> output; // Vector to hold the LZ77 tokens
+    deque<TrieNode*> window; // Sliding window of TrieNodes as double ended queue
+    TrieNode* root = new TrieNode(); // Root of the trie
+    int i = 0; // Index of the current byte in the input
 
+    // Iterate over the input bytes
+    // Time complexity of O(n) where n is the number of bytes in the input
     while (i < input.size()) {
-        TrieNode* node = root;
+        TrieNode* node = root; // Start at the root of the trie
         int match_distance = 0, match_length = 0, j = i;
 
-        // Search for the longest match in the sliding window
+        // Search for the longest match in the sliding window (time complexity of O(1) and determined by window_size)
+        //j is the index of the byte in the input
+        // i+window_size is the maximum length of the match
+        // input.size() is the maximum length of the input
         for (; j < i + window_size && j < input.size(); ++j) {
-            if (node->children[input[j]] == nullptr) break;
+            if (node->children[input[j]] == nullptr) break; //If the byte is not in the trie, break so it can be added as a literal
+            //If the byte is in the trie, move to the next node
             node = node->children[input[j]];
-            if (!node->indices.empty() && j - node->indices[0] <= window_size) {
-                match_distance = i - node->indices[0];
-                match_length = j - i + 1;  // Include the last character that was matched
+            if (!node->indices.empty() && j - node->indices[0] <= window_size) { //If the node has indices to use and the distance is within the window size
+                match_distance = i - node->indices[0]; //Calculate the distance back to the match
+                match_length = j - i + 1;  //Calculate the length of the match
             }
         }
 
         // Add the LZ77 token to the output
         if (match_length > 0 && i + match_length <= input.size()) {
             output.push_back(LZ77Token(match_distance, match_length, input[i + match_length - 1]));
-            i += match_length;  // Increment i by match_length if a match was found
-        } else if (i < input.size()) {
-            output.push_back(LZ77Token(0, 0, input[i]));  // If no match was found, create a token with the current character
-            i++;
+            i += match_length;  // Increment i by match_length if a match was found to skip the matched bytes
+        } else if (i < input.size()) { // If no match was found and there are still bytes left in the input
+            output.push_back(LZ77Token(0, 0, input[i]));  // create a token with the current byte as literal
+            i++; // Increment i to move to the next byte in the input
         }
 
         // Update the window
         if (window.size() > window_size) {
-            TrieNode* old_node = window.front();
+            TrieNode* old_node = window.front(); // Get the node that fell out of the window
             window.pop_front();
             delete old_node;  // Delete the TrieNode that fell out of the window
         }
-        TrieNode* new_node = new TrieNode();
-        window.push_back(new_node);
-        node = root;
-        for (int k = i - match_length; k <= j && k < input.size(); ++k) {
+        TrieNode* new_node = new TrieNode(); // Create a new TrieNode for the current byte
+        window.push_back(new_node); // Add the new node to the window
+
+        //Update the trie to match the new window
+        node = root; // Reset the node to the root of the trie before traversing
+        for (int k = i - match_length; k <= j && k < input.size(); ++k) { //k is the index of the byte in the input
             if (k >= 0) {
-                if (node->children[input[k]] == nullptr) {
-                    node->children[input[k]] = new_node;
+                if (node->children[input[k]] == nullptr) { //If current byte is not in the trie
+                    node->children[input[k]] = new_node; //Add the new node to the trie
                 }
-                else{
-                    node = node->children[input[k]];
+                else{ //If current byte does have a corresponding node in the trie
+                    node = node->children[input[k]]; //Move to the that node
                 }
-                node->indices.push_back(k);
+                node->indices.push_back(k); //Add the index of the byte to the node
             }
         }
     }
@@ -88,6 +96,7 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
 
     return byteStream;
 }
+
 vector<char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
     vector<char> output;
     for (const LZ77Token& token : compressed) {
