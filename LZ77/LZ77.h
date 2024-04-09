@@ -15,7 +15,7 @@ struct LZ77Token {
 class LZ77 {
 public:
     vector<char> loadFile(const string& filename);
-    void saveFile(const string& filename, const vector<char>& byteStream); 
+    void saveFile(const string& filename, const vector<char>& byteStream);
     vector<char> compress(const vector<char>& input, int window_size);
     vector<char> decompressToBytes(const vector<LZ77Token>& compressed);
     void decompressToFile(const vector<char>& compressedData, const string& filename);
