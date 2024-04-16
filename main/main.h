@@ -1,11 +1,10 @@
 #pragma once
 
 #include <iostream>
-#include <bitset>
-#include <iostream>
 #include <map>
 #include <vector>
 #include <fstream>
+#include <mio/mio.hpp>
 #include <benchmark/benchmark.h>
 #include <LZ77/LZ77.h>
 #include <Huffman/Huffman.h>
@@ -33,9 +32,10 @@ void writeCompressedData(ofstream& outputFile, const map<unsigned char, string>&
 
 
     //Write separator
-    unsigned char separator[8] = {255, 255, 255, 255, 255, 255, 255, 255};
-    outputFile.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
-
+    unsigned char separator = 255;
+    for (int i = 0; i < 8; ++i) {
+        outputFile.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+    }
     //Write the size of the compressed data
     size = compressedData.size();
     outputFile.write(reinterpret_cast<const char*>(&size), sizeof(size));
@@ -94,16 +94,18 @@ vector<unsigned char> readCompressedData(ifstream& inputFile) {
 
     return compressedData;
     */
-    // Read the size of the compressed data
-    // Define the separator
-    unsigned char separator[8] = {255, 255, 255, 255, 255, 255, 255, 255};
-    unsigned char buffer[8];
-
     // Read until separator
-    do {
-        inputFile.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
-    } while (memcmp(buffer, separator, sizeof(buffer)) != 0);
-
+    unsigned char separator = 255;
+    unsigned char byte;
+    int count = 0;
+    while (count < 8) {
+        inputFile.read(reinterpret_cast<char*>(&byte), sizeof(byte));
+        if (byte == separator) {
+            ++count;
+        } else {
+            count = 0;
+        }
+    }
     // Read the size of the compressed data
     size_t size;
     inputFile.read(reinterpret_cast<char*>(&size), sizeof(size));

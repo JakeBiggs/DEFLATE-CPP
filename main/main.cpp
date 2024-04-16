@@ -53,70 +53,59 @@ void testWriteRead() {
 
 
 void compress(){
-    /*
-    LZ77 lz;
-    Huffman huff;
-    int window_size = 4096;
 
-    ifstream inputFile("bee-movie.txt", ios::binary);
-    ofstream outputFile("output.bin", ios::binary);
-
-    if (!inputFile) {
-        cout << "Failed to open input file" << endl;
+    //Memory Mapping
+    std::error_code error;
+    const auto path = "bee-movie.txt";
+    mio::mmap_source mmap(path, 0, mio::map_entire_file);
+    mmap.map(path, error);
+    if (error) {
+        std::cout << "Error mapping file: " << error.message() << std::endl;
         return;
     }
 
-    vector<unsigned char> buffer(window_size); // Buffer size is equal to the window size
-    vector<unsigned char> lzCompressed;
-    while (inputFile) {
-        // Read a chunk of data from the file
-        streampos oldPos = inputFile.tellg();
-        inputFile.read(reinterpret_cast<char*>(&buffer[0]), buffer.size());
-        if (!inputFile) {
-            break;
-        }
-        streamsize bytesRead = inputFile.gcount();
 
-        // LZ77 compression
-        vector<unsigned char> chunkCompressed = lz.compress(buffer, window_size);
-        lzCompressed.insert(lzCompressed.end(), chunkCompressed.begin(), chunkCompressed.end());
+    // Get the data from the memory mapped file
+    vector<unsigned char> data(mmap.data(), mmap.end());
 
-        // Slide the buffer window over the file
-        inputFile.seekg(oldPos + bytesRead, ios::beg);
+
+    // Initialise
+    LZ77 lz;
+    int window_size = 4096;
+    ofstream outputFile("output.bin", ios::binary);
+    Huffman huff;
+
+    /*
+    // Process the file in chunks
+    const size_t chunk_size = 1024 * 1024; // 1MB
+    for (size_t i = 0; i < mmap.size(); i += chunk_size) {
+        // Get the current chunk from the memory mapped file
+        size_t current_chunk_size = std::min(chunk_size, mmap.size() - i);
+        std::vector<unsigned char> data(mmap.data() + i, mmap.data() + i + current_chunk_size);
+
+        // Compress the chunk
+        vector<unsigned char> compressed = lz.compress(data, window_size);
+        cout << "LZ77 Compression Complete for chunk " << i / chunk_size << endl;
+
+        // Compress the LZ77 output using Huffman coding
+        map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(compressed);
+        vector<unsigned char> huffCompressed = huff.encode(compressed, huffmanCodes);
+        cout << "Huffman Compression Complete for chunk " << i / chunk_size << endl;
+
+        // Write the compressed data and huffman codes
+        writeCompressedData(outputFile, huffmanCodes, huffCompressed);
 
     }
 
-    // Huffman compression
-    map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(lzCompressed);
-    vector<unsigned char> huffCompressed = huff.encode(lzCompressed, huffmanCodes);
-    
-    
-    // Write the Huffman codes to the output file
 
-
-
-    // Write the compressed data to the output file
-    //outputFile.write(&huffCompressed[0], huffCompressed.size());
-    outputFile.write(reinterpret_cast<const char*>(&huffCompressed[0]), huffCompressed.size());
-    
-
-    writeCompressedData(outputFile, huffmanCodes, huffCompressed);
-    inputFile.close();
     outputFile.close();
-
-    cout << "Compression Complete" << endl;
     */
-    // LEMPEL ZIV 77
-    LZ77 lz;
-    int window_size = 4096;
-    ofstream outputFile("output.txt", ios::binary);
 
     // Compress the file
-    vector<unsigned char> compressed = lz.compress(lz.loadFile("bee-movie.txt"), window_size);
+    vector<unsigned char> compressed = lz.compress(data, window_size);
     cout << "LZ77 Compression Complete" << endl;
 
-    // HUFFMAN
-    Huffman huff;
+
 
     //map<char, int> freq = huff.countBytes(compressed);
     //cout << "Huff counted bytes" << endl;
@@ -126,54 +115,62 @@ void compress(){
     cout << "Huffman Encoded" << endl;
     writeCompressedData(outputFile, huffmanCodes, huffCompressed);
     cout << "Compressed File Saved" << endl;
+
 }
 
 void decompress(){
-    /*
-    LZ77 lz;
-    Huffman huff;
-    int window_size = 4096;
 
-    ifstream inputFile("output.bin", ios::binary);
-    ofstream outputFile("output.txt", ios::binary);
-
-    if (!inputFile) {
-        cout << "Failed to open input file" << endl;
-        return;
-    }
-
-    // Read the Huffman codes from the input file
-    map<unsigned char, string> huffmanCodes = readHuffmanCodes(inputFile);
-
-    // Read the compressed data from the input file
-    vector<unsigned char> huffCompressed = readCompressedData(inputFile);
-
-    // Huffman decompression
-    //map<char, string> huffmanCodes = huff.generateHuffmanCodes(huffCompressed);
-    vector<unsigned char> lzCompressed = huff.decode(huffCompressed, huffmanCodes);
-
-    // LZ77 decompression
-    for (size_t i = 0; i < lzCompressed.size(); i += window_size) {
-        vector<unsigned char> chunk(lzCompressed.begin() + i, lzCompressed.begin() + min(i + window_size, lzCompressed.size()));
-        vector<LZ77Token> tokens = lz.byteStreamToTokens(chunk);
-        vector<unsigned char> decompressed = lz.decompressToBytes(tokens);
-
-        // Write the decompressed data to the output file
-        //outputFile.write(&decompressed[0], decompressed.size());
-        outputFile.write(reinterpret_cast<const char*>(&decompressed[0]), decompressed.size());
-    }
-
-    inputFile.close();
-    outputFile.close();
-
-    cout << "Decompression Complete" << endl;
-    */
     LZ77 lz;
     Huffman huff;
     int window_size = 4096;
     ifstream inputFile("output.bin", ios::binary);
     //ofstream outputFile("output.txt", ios::binary);
 
+    // Memory Mapping
+    std::error_code error;
+    mio::mmap_source mmap("output.bin",0, mio::map_entire_file);
+    if (error) {
+        std::cout << "Error mapping file: " << error.message() << std::endl;
+        return;
+    }
+    // Convert the memory-mapped data to a vector of unsigned chars
+    // std::vector<unsigned char> data(mmap.begin(), mmap.end());
+
+    /*
+    // Process the file in chunks
+    const size_t chunk_size = 1024 * 1024; // 1MB
+    while(inputFile){
+        //Read the huffman codes for the chunk
+        map<unsigned char, string> huffmanCodes = readHuffmanCodes(inputFile);
+
+        //Read the compressed data for the chunk
+        vector<unsigned char> huffCompressed;
+        for (size_t i = 0; i <chunk_size; i++){
+            unsigned char byte;
+            inputFile.read(reinterpret_cast<char*>(&byte), sizeof(byte));
+            huffCompressed.push_back(byte);
+        }
+
+        // Decompress the huffman encoding
+        vector<unsigned char> huffDecompressed = huff.decode(huffCompressed, huffmanCodes);
+        cout << "Huffman decoded" << endl;
+
+        // Decompress the LZ77 encoding
+        vector<LZ77Token> tokens = lz.byteStreamToTokens(huffDecompressed);
+        cout << "Converted Bytestream back to tokens" << endl;
+        vector<unsigned char> decompressed = lz.decompressToBytes(tokens);
+        cout << "Decompressed LZ77" << endl;
+
+        // Write the decompressed data to the output file
+        for (unsigned char byte : decompressed) {
+            outputFile.write(reinterpret_cast<const char*>(&byte), sizeof(byte));
+        }
+
+    }
+    */
+
+
+    // Get the data from the memory mapped file
     map<unsigned char, string> huffmanCodes = readHuffmanCodes(inputFile);
     vector<unsigned char> huffCompressed = readCompressedData(inputFile);
 
@@ -189,7 +186,7 @@ void decompress(){
     vector<unsigned char> decompressed = lz.decompressToBytes(tokens);
     cout << "Decompressed LZ77" << endl;
     lz.saveFile("output.txt", decompressed);
-
+    cout << "Saved Output" << endl;
 
 
 }
