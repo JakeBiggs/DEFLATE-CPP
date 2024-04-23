@@ -10,6 +10,7 @@ using namespace std;
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <unordered_map>
 #include <benchmark/benchmark.h>
 
 
@@ -17,20 +18,20 @@ static void BM_Deflate(benchmark::State &s){
     LZ77 lz;
     Huffman huff;
     int window_size= 4096;
-    vector<char> data = lz.loadFile("bee-movie-100.txt");
+    vector<unsigned char> data = lz.loadFile("bee-movie.txt");
 
     for (auto _ : s){
         //Lz77 compression:
-        vector<char> lzCompressed = lz.compress(data, window_size);
+        vector<unsigned char> lzCompressed = lz.compress(data, window_size);
 
         //Huffman compression:
-        map<char, string> huffmanCodes = huff.generateHuffmanCodes(lzCompressed);
-        vector<char> huffCompressed = huff.encode(lzCompressed, huffmanCodes);
+        unordered_map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(lzCompressed);
+        vector<unsigned char> huffCompressed = huff.encode(lzCompressed, huffmanCodes);
 
         //Decompression:
-        vector<char> huffDecompressed = huff.decode(huffCompressed, huffmanCodes);
+        vector<unsigned char> huffDecompressed = huff.decode(huffCompressed, huffmanCodes);
         vector<LZ77Token> tokens = lz.byteStreamToTokens(huffDecompressed);
-        vector<char> decompressed = lz.decompressToBytes(tokens);
+        vector<unsigned char> decompressed = lz.decompressToBytes(tokens);
         lz.saveFile("output.txt", decompressed);
     }
 }
