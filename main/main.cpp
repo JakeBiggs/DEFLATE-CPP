@@ -14,6 +14,7 @@ using namespace std;
 #include <benchmark/benchmark.h>
 
 
+
 static void BM_Deflate(benchmark::State &s){
     LZ77 lz;
     Huffman huff;
