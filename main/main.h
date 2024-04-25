@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include <map>
 #include <vector>
 #include <fstream>
 #include <mio/mio.hpp>
@@ -16,7 +15,7 @@ void decompress(string path, string outputFilename);
 
 void testWriteRead();
 
-void writeCompressedData(ofstream& outputFile, const map<unsigned char, string>& huffmanCodes, const std::vector<unsigned char>& compressedData){
+void writeCompressedData(ofstream& outputFile, const unordered_map<unsigned char, string>& huffmanCodes, const std::vector<unsigned char>& compressedData){
     //Write the size of the metadata first
     size_t size = huffmanCodes.size();
     outputFile.write(reinterpret_cast<const char*>(&size), sizeof(size));
@@ -46,13 +45,13 @@ void writeCompressedData(ofstream& outputFile, const map<unsigned char, string>&
     outputFile.write(reinterpret_cast<const char*>(&compressedData[0]), compressedData.size());
 }
 
-map<unsigned char, string> readHuffmanCodes(ifstream& inputFile){
+unordered_map<unsigned char, string> readHuffmanCodes(ifstream& inputFile){
     //Read the size of the huffman codes
     size_t size;
     inputFile.read(reinterpret_cast<char*>(&size), sizeof(size));
 
     //Read the huffman codes
-    map<unsigned char, string> huffmanCodes;
+    unordered_map<unsigned char, string> huffmanCodes;
     for (size_t i = 0; i < size; ++i){
         unsigned char byte;
         inputFile.read(reinterpret_cast<char*>(&byte), sizeof(byte)); //Read the byte

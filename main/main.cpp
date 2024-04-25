@@ -10,8 +10,8 @@ using namespace std;
 
 static void BM_Deflate(benchmark::State &s){
     //Define list of files to test
-    //vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt","bee-movie-500.txt"};
-    vector<string> files = {"bee-movie-300.txt","bee-movie-400.txt"};
+    vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt","bee-movie-500.txt"};
+    //vector<string> files = {"bee-movie-300.txt","bee-movie-400.txt"};
     ofstream csvFile("results.csv");
     csvFile << "File, Compression Time, Decompression Time, Compression Ratio" << endl;
     int i = 0;
@@ -38,7 +38,7 @@ static void BM_Deflate(benchmark::State &s){
 
 void testWriteRead() {
     // Generate some test data
-    map<unsigned char, string> huffmanCodes = {{'a', "0"}, {'b', "10"}, {'c', "110"}};
+    unordered_map<unsigned char, string> huffmanCodes = {{'a', "0"}, {'b', "10"}, {'c', "110"}};
     vector<unsigned char> compressedData = {'a', 'b', 'c'};
 
     // Write the test data to a file
@@ -48,7 +48,7 @@ void testWriteRead() {
 
     // Read the test data from the file
     ifstream inputFile("test.bin", ios::binary);
-    map<unsigned char, string> huffmanCodesAfterRead = readHuffmanCodes(inputFile);
+    unordered_map<unsigned char, string> huffmanCodesAfterRead = readHuffmanCodes(inputFile);
     vector<unsigned char> compressedDataAfterRead = readCompressedData(inputFile);
     inputFile.close();
 
@@ -126,7 +126,7 @@ void compress(string path, string outputFilename){
 
     //map<char, int> freq = huff.countBytes(compressed);
     //cout << "Huff counted bytes" << endl;
-    map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(compressed);
+    unordered_map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(compressed);
     cout << "Generated Huffman Codes" << endl;
     vector<unsigned char> huffCompressed = huff.encode(compressed, huffmanCodes);
     cout << "Huffman Encoded" << endl;
@@ -189,7 +189,7 @@ void decompress(string path, string outputFilename){
 
 
     // Get the data from the memory mapped file
-    map<unsigned char, string> huffmanCodes = readHuffmanCodes(inputFile);
+    unordered_map<unsigned char, string> huffmanCodes = readHuffmanCodes(inputFile);
     vector<unsigned char> huffCompressed = readCompressedData(inputFile);
 
     cout << "Beginning Decompression..." << endl;
