@@ -20,52 +20,43 @@ This way, the nodes with the highest weight will be near the top of the tree, an
 #include "Huffman.h"
 #include <bitset>
 
-map<unsigned char, int> Huffman::countBytes(const vector<unsigned char>& input) {
-    map<unsigned char, int> freq;
-    for (unsigned char byte : input) {
+unordered_map<unsigned char, int> Huffman::countBytes(const vector<unsigned char>& input) {
+    unordered_map<unsigned char, int> freq;
+    for (auto byte : input) {
         ++freq[byte];
     }
     return freq;
 }
 
-vector<Node*> Huffman::createNodes(const map<unsigned char, int>& frequencies) {
-    vector<Node*> nodes;
+priority_queue<Node*, vector<Node*>, Compare> Huffman::createNodes(const unordered_map<unsigned char, int>& frequencies) {
+    priority_queue<Node*, vector<Node*>, Compare> nodes;
     for (auto pair : frequencies) {
-        nodes.push_back(new Node(pair.first, pair.second, nullptr, nullptr));
+        nodes.push(new Node(pair.first, pair.second, nullptr, nullptr));
     }
     return nodes;
 }
 
-Node* Huffman::buildTree(vector<Node*>& nodes){
-    if (nodes.size() == 1) return nodes[0]; // If there is only one node, return it (base case
+Node* Huffman::buildTree(priority_queue<Node*, vector<Node*>, Compare>& nodes){
+    if (nodes.size() == 1) return nodes.top(); // If there is only one node, return it (base case)
     if (nodes.empty()) return nullptr; // If there are no nodes, return nullptr
 
-    //Inefficient way to build the tree O(n^2 log n)
+    //Inefficient way to build the tree O(n^2 log n) 
     while (nodes.size() > 1) {
-        // Sort the nodes by frequency
-        sort(nodes.begin(), nodes.end(), [](Node* a, Node* b) { return a->freq < b->freq; });
-
-        if (nodes.size() < 2) {
-            cout << "Not enough nodes to build tree\n" << endl;
-            // Handle error
-            throw std::runtime_error("Not enough nodes to build tree");
-        }
         // Get the two nodes with the smallest frequency
-        Node* left = nodes[0];
-        Node* right = nodes[1];
+        Node* left = nodes.top(); nodes.pop();
+        Node* right = nodes.top(); nodes.pop();
 
         // Create a new node with the two nodes as children
         Node* parent = new Node('\0', left->freq + right->freq, left, right);
 
-        // Remove the two nodes from the list and add the new node
-        nodes.erase(nodes.begin(), nodes.begin() + 2);
-        nodes.push_back(parent);
+        // Add the new node to the priority queue
+        nodes.push(parent);
     }
-    return nodes[0];
+    return nodes.top();
 
 }
 
-void Huffman::traverseHuffmanTree(Node* node, string code, map<unsigned char, string>& huffmanCodes) {
+void Huffman::traverseHuffmanTree(Node* node, string code, unordered_map<unsigned char, string>& huffmanCodes) {
     if (node->left == nullptr && node->right == nullptr) { // Leaf node
         huffmanCodes[node->data] = code;
     }
@@ -79,16 +70,16 @@ void Huffman::traverseHuffmanTree(Node* node, string code, map<unsigned char, st
     }
 }
 
-map<unsigned char, string> Huffman::generateHuffmanCodes(const vector<unsigned char>& input) {
-    map<unsigned char, int> freq = countBytes(input);
-    vector<Node*> nodes = createNodes(freq);
+unordered_map<unsigned char, string> Huffman::generateHuffmanCodes(const vector<unsigned char>& input) {
+    unordered_map<unsigned char, int> freq = countBytes(input);
+    priority_queue<Node*, vector<Node*>, Compare> nodes = createNodes(freq);
     Node* root = buildTree(nodes);
-    map<unsigned char, string> huffmanCodes;
+    unordered_map<unsigned char, string> huffmanCodes;
     traverseHuffmanTree(root, "", huffmanCodes);
     return huffmanCodes;
 }
 
-vector<unsigned char> Huffman::encode(const vector<unsigned char>& input, const map<unsigned char, string>& huffmanCodes) {
+vector<unsigned char> Huffman::encode(const vector<unsigned char>& input, const unordered_map<unsigned char, string>& huffmanCodes) {
     vector<unsigned char> encoded;
     string temp;
     for (unsigned char byte : input) {
@@ -98,7 +89,7 @@ vector<unsigned char> Huffman::encode(const vector<unsigned char>& input, const 
             // Convert the first 8 bits to a char byte and add it to the encoded data
             unsigned char byte = static_cast<char>(bitset<8>(temp.substr(0, 8)).to_ulong());
             encoded.push_back(byte); //
-            temp = temp.substr(8); // Remove the first 8 bits after processing
+            temp = temp.substr(8); // Remove the first 8 bits after processing 
         }
     }
     // Add the remaining bits
@@ -116,11 +107,10 @@ vector<unsigned char> Huffman::encode(const vector<unsigned char>& input, const 
     return encoded;
 }
 
-vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const map<unsigned char, string>& huffmanCodes) {
-    string encoded;
+vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const unordered_map<unsigned char, string>& huffmanCodes) {
     vector<unsigned char> decoded;
 
-    map<string, unsigned char> reversedHuffmanCodes;
+    unordered_map<string, unsigned char> reversedHuffmanCodes;
     for (const auto &pair : huffmanCodes) {
         reversedHuffmanCodes[pair.second] = pair.first;
     }
@@ -129,26 +119,24 @@ vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const 
     size_t validBitsInLastByte = static_cast<size_t>(input.back());
     vector<unsigned char> inputWithoutExtraByte(input.begin(), input.end() - 1);
 
+    string code;
     for (size_t i = 0; i < inputWithoutExtraByte.size(); ++i) {
-        char byte = inputWithoutExtraByte[i];
-        bitset<8> bits(byte);
+        unsigned char byte = inputWithoutExtraByte[i];
 
         // If this is the last byte, only include the valid bits
-        if (i == inputWithoutExtraByte.size() - 1) {
-            encoded += bits.to_string().substr(0, validBitsInLastByte);
-        } else {
-            encoded += bits.to_string();
-        }
-    }
+        size_t bitsToProcess = (i == inputWithoutExtraByte.size() - 1) ? validBitsInLastByte : 8;
 
-    string code;
-    for(char bit : encoded){
-        code += bit;
-        auto iterator = reversedHuffmanCodes.find(code);
-        if (iterator != reversedHuffmanCodes.end()){ // If the current byte is a valid huffman code (will be end if not)
-            unsigned char decodedByte = iterator->second;
-            decoded.push_back(iterator->second);
-            code.clear();
+        for (size_t j = 0; j < bitsToProcess; ++j) {
+            // Get the j-th bit of the byte
+            bool bit = (byte >> (7 - j)) & 1;
+            code += bit ? '1' : '0';
+
+            auto iterator = reversedHuffmanCodes.find(code);
+            if (iterator != reversedHuffmanCodes.end()){ // If the current byte is a valid huffman code (will be end if not)
+                unsigned char decodedByte = iterator->second;
+                decoded.push_back(iterator->second);
+                code.clear();
+            }
         }
     }
 
