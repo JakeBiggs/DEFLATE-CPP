@@ -9,13 +9,31 @@ using namespace std;
 
 
 static void BM_Deflate(benchmark::State &s){
-
+    //Define list of files to test
+    //vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt","bee-movie-500.txt"};
+    vector<string> files = {"bee-movie-300.txt","bee-movie-400.txt"};
+    ofstream csvFile("results.csv");
+    csvFile << "File, Compression Time, Decompression Time, Compression Ratio" << endl;
+    int i = 0;
     for (auto _ : s){
-        compress();
-        decompress();
+        for (const auto& file : files) {
+            auto start = chrono::high_resolution_clock::now();
+            compress(file, "output.bin");
+            auto end = chrono::high_resolution_clock::now();
+            chrono::duration<double> compressTime = end - start;
+
+            start = chrono::high_resolution_clock::now();
+            decompress("output.bin", "output.txt");
+            end = chrono::high_resolution_clock::now();
+            chrono::duration<double> decompressTime = end - start;
+
+            csvFile << file << "," << compressTime.count() << "," << decompressTime.count() << "\n";
+
+        }
         //testWriteRead();
         //readUntilEndOfCodes();
     }
+    csvFile.close();
 }
 
 void testWriteRead() {
@@ -51,11 +69,11 @@ void testWriteRead() {
 
 
 
-void compress(){
+void compress(string path, string outputFilename){
 
     //Memory Mapping
     std::error_code error;
-    const auto path = "bee-movie.txt";
+    //const auto path = "bee-movie.txt";
     mio::mmap_source mmap(path, 0, mio::map_entire_file);
     mmap.map(path, error);
     if (error) {
@@ -71,7 +89,7 @@ void compress(){
     // Initialise
     LZ77 lz;
     int window_size = 4096;
-    ofstream outputFile("output.bin", ios::binary);
+    ofstream outputFile(outputFilename, ios::binary);
     Huffman huff;
 
     /*
@@ -117,17 +135,18 @@ void compress(){
 
 }
 
-void decompress(){
+void decompress(string path, string outputFilename){
 
     LZ77 lz;
     Huffman huff;
     int window_size = 4096;
-    ifstream inputFile("output.bin", ios::binary);
+    ifstream inputFile(path, ios::binary);
     //ofstream outputFile("output.txt", ios::binary);
 
     // Memory Mapping
     std::error_code error;
-    mio::mmap_source mmap("output.bin",0, mio::map_entire_file);
+    mio::mmap_source mmap(path,0, mio::map_entire_file);
+    mmap.map(path, error);
     if (error) {
         std::cout << "Error mapping file: " << error.message() << std::endl;
         return;
@@ -184,7 +203,7 @@ void decompress(){
 
     vector<unsigned char> decompressed = lz.decompressToBytes(tokens);
     cout << "Decompressed LZ77" << endl;
-    lz.saveFile("output.txt", decompressed);
+    lz.saveFile(outputFilename, decompressed);
     cout << "Saved Output" << endl;
 
 

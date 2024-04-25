@@ -9,9 +9,10 @@
 #include <LZ77/LZ77.h>
 #include <Huffman/Huffman.h>
 #include <cstring>
+#include <chrono>
 using namespace std;
-void compress();
-void decompress();
+void compress(string path, string outputFilename);
+void decompress(string path, string outputFilename);
 
 void testWriteRead();
 
