@@ -103,17 +103,18 @@ vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const 
     }
 
     // Read the extra byte that contains the number of valid bits in the last byte
-    auto validBitsInLastByte = static_cast<size_t>(input.back());
-    vector<unsigned char> inputWithoutExtraByte(input.begin(), input.end() - 1);
+    size_t validBitsInLastByte = 8;
+    size_t inputSize = input.size();
+    if (inputSize > 1 && input.back() <= 8) {
+        validBitsInLastByte = static_cast<size_t>(input.back());
+        --inputSize;
+    }
 
     string code;
-    for (size_t i = 0; i < inputWithoutExtraByte.size(); ++i) {
-        unsigned char byte = inputWithoutExtraByte[i];
+    for (size_t i = 0; i < inputSize - 1; ++i) {
+        unsigned char byte = input[i];
 
-        // If this is the last byte, only include the valid bits
-        size_t bitsToProcess = (i == inputWithoutExtraByte.size() - 1) ? validBitsInLastByte : 8;
-
-        for (size_t j = 0; j < bitsToProcess; ++j) {
+        for (size_t j = 0; j < 8; ++j) {
             // Get the j-th bit of the byte
             bool bit = (byte >> (7 - j)) & 1;
             code += bit ? '1' : '0';
@@ -125,9 +126,27 @@ vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const 
             }
         }
     }
+
+    // Handle the last byte separately
+    if (inputSize < input.size()) { // If there is an extra byte (validBitsInLastByte <= 8
+        unsigned char lastByte = input[inputSize];
+        for (size_t j = 0; j < validBitsInLastByte; ++j) {
+            // Get the j-th bit of the byte
+            bool bit = (lastByte >> (7 - j)) & 1;
+            code += bit ? '1' : '0';
+
+            auto iterator = reversedHuffmanCodes.find(code);
+            if (iterator != reversedHuffmanCodes.end()) {
+                decoded.push_back(iterator->second);
+                code.clear();
+            }
+        }
+    }
+
     if (!code.empty()) {
         cout << "Invalid Huffman Code: " << code << endl;
         throw runtime_error("Invalid Huffman code");
     }
+
     return decoded;
 }
