@@ -2,7 +2,16 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <unordered_map>
+#include <map>
+#include <deque>
 using namespace std;
+
+struct TrieNode {
+    map<char, TrieNode*> children;
+    vector<int> indices;
+};
+
 
 struct LZ77Token {
     uint16_t offset;
