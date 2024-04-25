@@ -8,7 +8,6 @@
 using namespace std;
 
 
-
 static void BM_Deflate(benchmark::State &s){
 
     for (auto _ : s){
