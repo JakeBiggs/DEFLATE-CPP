@@ -1,7 +1,7 @@
 #include "LZ77.h"
 
 
-vector<char> LZ77::loadFile(const string& filename) {
+vector<unsigned char> LZ77::loadFile(const string& filename) {
     // Open the file
     ifstream file(filename, ios::binary);
     if (!file.good()) {
@@ -11,21 +11,21 @@ vector<char> LZ77::loadFile(const string& filename) {
     }
 
     // Read the entire file into a vector of chars
-    vector<char> input((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    vector<unsigned char> input((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
     file.close();
     return input;
 }
 
-void LZ77::saveFile(const string& filename, const vector<char>& byteStream) {
+void LZ77::saveFile(const string& filename, const vector<unsigned char>& byteStream) {
     ofstream outfile(filename, ios::binary);
     if (!outfile) {
         throw std::runtime_error("Could not open file for writing");
     }
-    outfile.write(&byteStream[0], byteStream.size());
+    outfile.write(reinterpret_cast<const char*>(&byteStream[0]), byteStream.size());
     outfile.close();
 }
 
-vector<char> LZ77::compress(const vector<char>& input, int window_size) {
+vector<unsigned char> LZ77::compress(const vector<unsigned char>& input, int window_size) {
     vector<LZ77Token> output; // Vector to hold the LZ77 tokens
     deque<TrieNode*> window; // Sliding window of TrieNodes as double ended queue
     TrieNode* root = new TrieNode(); // Root of the trie
@@ -92,13 +92,13 @@ vector<char> LZ77::compress(const vector<char>& input, int window_size) {
     }
 
     // Convert the output tokens to a byte stream
-    vector<char> byteStream = tokensToByteStream(output);
+    vector<unsigned char> byteStream = tokensToByteStream(output);
 
     return byteStream;
 }
 
-vector<char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
-    vector<char> output;
+vector<unsigned char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
+    vector<unsigned char> output;
     for (const LZ77Token& token : compressed) {
         if (token.length > 0) {
             // Copy the match from the specified distance back in the output
@@ -116,18 +116,18 @@ vector<char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
     return output;
 }
 
-void LZ77::decompressToFile(const vector<char>& compressedData, const string& filename) {
+void LZ77::decompressToFile(const vector<unsigned char>& compressedData, const string& filename) {
     vector<LZ77Token> tokens = byteStreamToTokens(compressedData);
 
-    vector<char> output = decompressToBytes(tokens);
+    vector<unsigned char> output = decompressToBytes(tokens);
     saveFile(filename, output);
 
 }
 
 
-vector<char> LZ77::tokensToByteStream(const vector<LZ77Token>& tokens) {
+vector<unsigned char> LZ77::tokensToByteStream(const vector<LZ77Token>& tokens) {
     //Create a vector to hold a bytestream (needed for huffman)
-    vector<char> byteStream;
+    vector<unsigned char> byteStream;
 
     // Convert the LZ77 tokens to a byte stream
     for (const LZ77Token& token : tokens) {
@@ -136,15 +136,15 @@ vector<char> LZ77::tokensToByteStream(const vector<LZ77Token>& tokens) {
         }
         uint16_t offset = token.offset;
         uint16_t length = token.length;
-        char next = token.next;
+        unsigned char next = token.next;
 
         // Convert the offset to bytes and add them to the byte stream
-        byteStream.push_back(static_cast<char>(offset & 0xFF)); //Bitwise AND to keep 8 least significant digits
-        byteStream.push_back(static_cast<char>((offset >> 8) & 0xFF));  //Bitwise shift to get the next 8 digits
+        byteStream.push_back(static_cast<unsigned char>(offset & 0xFF)); //Bitwise AND to keep 8 least significant digits
+        byteStream.push_back(static_cast<unsigned char>((offset >> 8) & 0xFF));  //Bitwise shift to get the next 8 digits
 
         // Convert the length to bytes and add them to the byte stream
-        byteStream.push_back(static_cast<char>(length & 0xFF)); //Bitwise AND to keep 8 least significant digits
-        byteStream.push_back(static_cast<char>((length >> 8) & 0xFF)); //Bitwise shift to get the next 8 digits
+        byteStream.push_back(static_cast<unsigned char>(length & 0xFF)); //Bitwise AND to keep 8 least significant digits
+        byteStream.push_back(static_cast<unsigned char>((length >> 8) & 0xFF)); //Bitwise shift to get the next 8 digits
 
         // Add the next character to the byte stream
         byteStream.push_back(next);
@@ -154,12 +154,13 @@ vector<char> LZ77::tokensToByteStream(const vector<LZ77Token>& tokens) {
 
 
 
-vector<LZ77Token> LZ77::byteStreamToTokens(const vector<char>& byteStream) {
+vector<LZ77Token> LZ77::byteStreamToTokens(const vector<unsigned char>& byteStream) {
     vector<LZ77Token> tokens;
 
     // Check if the size of the input vector is a multiple of 5
     if (byteStream.size() % 5 != 0) {
-        throw std::runtime_error("Invalid byte stream size");
+        //throw std::runtime_error("Invalid byte stream size");
+        cout <<"Stream size invalid, trying anyway..." <<endl;
     }
 
     // Convert the byte stream to LZ77 tokens
@@ -172,8 +173,8 @@ vector<LZ77Token> LZ77::byteStreamToTokens(const vector<char>& byteStream) {
         uint16_t length = static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i + 2])) |
                           (static_cast<uint16_t>(static_cast<unsigned char>(byteStream[i + 3])) << 8);
 
-        // Get next char
-        char next = byteStream[i + 4];
+        // Get next unsigned char
+        unsigned char next = byteStream[i + 4];
 
         tokens.push_back(LZ77Token(offset, length, next));
     }
