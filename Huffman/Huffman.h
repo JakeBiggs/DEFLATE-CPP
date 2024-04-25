@@ -18,13 +18,13 @@ struct Node {
 
 class Huffman{
     public:
-        map<char, int> countBytes(const vector<char>& input);
-        vector<Node*> createNodes(const map<char, int>& frequencies);
+        map<unsigned char, int> countBytes(const vector<unsigned char>& input);
+        vector<Node*> createNodes(const map<unsigned char, int>& frequencies);
         Node* buildTree(vector<Node*>& nodes);
-        void traverseHuffmanTree(Node* node, string code, map<char, string>& huffmanCodes);
-        map<char, string> generateHuffmanCodes(const vector<char>& input);
-        vector<char> encode(const vector<char>& input, const map<char, string>& huffmanCodes);
-        vector<char> decode(const vector<char>& input, const map<char, string>& huffmanCodes);
+        void traverseHuffmanTree(Node* node, string code, map<unsigned char, string>& huffmanCodes);
+        map<unsigned char, string> generateHuffmanCodes(const vector<unsigned char>& input);
+        vector<unsigned char> encode(const vector<unsigned char>& input, const map<unsigned char, string>& huffmanCodes);
+        vector<unsigned char> decode(const vector<unsigned char>& input, const map<unsigned char, string>& huffmanCodes);
     private:
         
 };
