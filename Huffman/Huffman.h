@@ -40,4 +40,13 @@ public:
     void traverseHuffmanTree(Node *node, const string &code, unordered_map<unsigned char, string> &huffmanCodes);
 
     Node *buildTree(deque<Node *> &nodes);
+
+    unordered_map<unsigned char, string> generateHuffmanCodesFromFreq(unordered_map<unsigned char, int> freq){
+        deque<Node*> nodes = createNodes(freq);
+        Node* root = buildTree(nodes);
+        unordered_map<unsigned char, string> huffmanCodes;
+        string code(256, '\0');
+        traverseHuffmanTree(root, code, 0, huffmanCodes);
+        return huffmanCodes;
+    }
 };

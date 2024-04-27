@@ -27,7 +27,7 @@ static void BM_Deflate(benchmark::State &s){
 
 
             start = chrono::high_resolution_clock::now();
-            //decompress("output.bin", "output.txt");
+            decompress("output.bin", "output.txt");
             end = chrono::high_resolution_clock::now();
             chrono::duration<double> decompressTime = end - start;
 

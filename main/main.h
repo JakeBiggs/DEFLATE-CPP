@@ -132,22 +132,23 @@ void testWriteRead() {
 
 
 //Function to process chunks
-tuple<int, unordered_map<unsigned char, string>, vector<unsigned char>> compress_chunk(const vector<unsigned char>&chunk, int chunk_index){
+tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>> compress_chunk(const vector<unsigned char>&chunk, int chunk_index){
     cout<<"Processing chunk of size" << chunk.size() << endl;
     LZ77 lz;
     int window_size = 4096;
     Huffman huff;
 // Compress the file
     vector<unsigned char> compressed = lz.compress(chunk, window_size);
-    unordered_map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(compressed);
-    vector<unsigned char> huffCompressed = huff.encode(compressed, huffmanCodes);
-//writeCompressedData(outputFile, huffmanCodes, huffCompressed);
+    //unordered_map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(compressed);
+    unordered_map<unsigned char, int> frequencyTable = huff.countBytes(compressed);
+
+    //vector<unsigned char> huffCompressed = huff.encode(compressed, huffmanCodes);
+    //writeCompressedData(outputFile, huffmanCodes, huffCompressed);
 
     this_thread::sleep_for(chrono::seconds(1));
 
-    return make_tuple(chunk_index, huffmanCodes, huffCompressed);
+    return make_tuple(chunk_index, frequencyTable, compressed);
 }
-
 
 void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t num_threads) {
     // Open the file for reading
@@ -167,17 +168,70 @@ void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t n
     condition_variable cv;
 
     // Priority queue to store chunks
-    auto compare = [](const tuple<int, unordered_map<unsigned char, string>, vector<unsigned char>>& a, const tuple<int, unordered_map<unsigned char, string>, vector<unsigned char>>& b) {
+    auto compare = [](const tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>& a, const tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>& b) {
         return get<0>(a) > get<0>(b);
     };
-    priority_queue<tuple<int, unordered_map<unsigned char, string>, vector<unsigned char>>, vector<tuple<int, unordered_map<unsigned char, string>, vector<unsigned char>>>, decltype(compare)> chunks(compare);
+    priority_queue<tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>, vector<tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>>, decltype(compare)> chunks(compare);
 
     //Flag to indicate when all chunks have been processed
     atomic<bool> all_chunks_processed(false);
 
+    // Vector to store thread objects
+    vector<thread> threads;
 
-    // Function to read and process chunks
-    auto process_chunk = [&](size_t thread_id) {
+    // Create threads to process chunks
+    for (size_t i = 0; i < num_threads; ++i) {
+        threads.emplace_back([&](size_t thread_id) {
+            vector<unsigned char> chunk(chunk_size);
+            int chunk_index = 0;
+            while (true) {
+                // Read chunk from file
+                {
+                    lock_guard<mutex> lock(file_mutex);
+                    if (!file.read(reinterpret_cast<char *>(chunk.data()), chunk_size)) {
+                        break; // End of file
+                    }
+                }
+                // Resize chunk to actual number of bytes read
+                chunk.resize(file.gcount());
+                // Compress the chunk
+                tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>> compressed_chunk = compress_chunk(chunk, chunk_index);
+                // Add compressed chunk to priority queue
+                {
+                    lock_guard<mutex> lock(queue_mutex);
+                    chunks.push(compressed_chunk);
+                    cv.notify_one();
+                }
+                chunk_index++;
+            }
+        }, i);
+    }
+
+    // Wait for all process_chunk threads to finish
+    for (size_t i = 0; i < num_threads; ++i) {
+        threads[i].join();
+    }
+    all_chunks_processed = true;
+
+    //Merge frequency tables and huffman codes
+    unordered_map<unsigned char, int> mergedFrequencyTable;
+    while (!chunks.empty()) {
+        auto chunk = chunks.top();
+        chunks.pop();
+        for (const auto& pair : get<1>(chunk)) {
+            mergedFrequencyTable[pair.first] += pair.second;
+        }
+    }
+
+    //Generate huffman codes
+    Huffman huff;
+    unordered_map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodesFromFreq(mergedFrequencyTable);
+
+    //Prepare for second pass
+    file.close();
+    file.open(filename, ios::binary);
+
+    auto second_pass = [&](size_t thread_id) {
         vector<unsigned char> chunk(chunk_size);
         int chunk_index = 0;
         while (true) {
@@ -187,65 +241,34 @@ void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t n
                 if (!file.read(reinterpret_cast<char *>(chunk.data()), chunk_size)) {
                     break; // End of file
                 }
-
             }
             // Resize chunk to actual number of bytes read
             chunk.resize(file.gcount());
-            // Compress the chunk
-            tuple<int, unordered_map<unsigned char, string>, vector<unsigned char>> compressed_chunk = compress_chunk(chunk, chunk_index);
-            // Add compressed chunk to priority queue
+            // Huffman encode the chunk
+            vector<unsigned char> huffCompressed = huff.encode(chunk, huffmanCodes);
+            //write chunk
             {
                 lock_guard<mutex> lock(queue_mutex);
-                chunks.push(compressed_chunk);
-                chunk_index++;
-                cv.notify_one();
+                writeCompressedData(outputFile, huffmanCodes, huffCompressed);
             }
+            chunk_index++;
         }
     };
 
-    //Function to write compressed data to file
-    auto write_compressed_data = [&](){
-        int expected_chunk_index = 0;
-        while(true){
-            unique_lock<mutex> lock(queue_mutex);
-            cv.wait(lock, [&]() {return !chunks.empty() && get<0>(chunks.top()) == expected_chunk_index || all_chunks_processed;});
-            if(chunks.empty()){
-                break; //All chunks have been processed
-            }
-            //pair<int, vector<unsigned char>> chunk = chunks.top();
-            auto chunk = chunks.top();
-            chunks.pop();
-            lock.unlock();
-            writeCompressedData(outputFile, get<1>(chunk), get<2>(chunk));
-            expected_chunk_index++;
-        }
-    };
-
-    // Vector to store thread objects
-    vector<thread> threads;
-
-    // Create threads to process chunks
+    // Create threads for second pass
+    vector<thread> second_pass_threads;
     for (size_t i = 0; i < num_threads; ++i) {
-        threads.emplace_back(process_chunk, i);
+        second_pass_threads.emplace_back(second_pass, i);
     }
-
-    // Wait for all process_chunk threads to finish
+    // Wait for all second pass threads to finish
     for (size_t i = 0; i < num_threads; ++i) {
-        threads[i].join();
+        second_pass_threads[i].join();
     }
-    all_chunks_processed = true;
-
-    // Create thread to write compressed data to file
-    thread write_thread(write_compressed_data);
-
-    // Wait for write thread to finish
-    write_thread.join();
 
     // Close files
     file.close();
     outputFile.close();
 }
-
 
 /*
 //Function to split the data into chunks for each thread

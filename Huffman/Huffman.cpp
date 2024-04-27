@@ -69,6 +69,8 @@ unordered_map<unsigned char, string> Huffman::generateHuffmanCodes(const vector<
     return huffmanCodes;
 }
 
+
+
 vector<unsigned char> Huffman::encode(const vector<unsigned char>& input, const unordered_map<unsigned char, string>& huffmanCodes) {
     vector<unsigned char> encoded;
     int length = 0;
