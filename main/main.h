@@ -16,10 +16,20 @@
 using namespace std;
 
 void compress(string path, string outputFilename);
-void compress_chunk(const vector<unsigned char>&chunk);
+//void compress_chunk(const vector<unsigned char>&chunk);
 void decompress(string path, string outputFilename);
 
-void writeCompressedData(ofstream& outputFile, const unordered_map<unsigned char, string>& huffmanCodes, const vector<unsigned char>& compressedData){
+void writeCompressedData(ofstream& outputFile, const vector<unsigned char>& compressedData){
+    //Write the size of the compressed data
+    size_t size = compressedData.size();
+    outputFile.write(reinterpret_cast<const char*>(&size), sizeof(size));
+
+
+    //Write the compressed data
+    outputFile.write(reinterpret_cast<const char*>(&compressedData[0]), compressedData.size());
+}
+
+void writeHuffmanCodes(ofstream& outputFile, const unordered_map<unsigned char, string>& huffmanCodes){
     //Write the size of the metadata first
     size_t size = huffmanCodes.size();
     outputFile.write(reinterpret_cast<const char*>(&size), sizeof(size));
@@ -33,20 +43,11 @@ void writeCompressedData(ofstream& outputFile, const unordered_map<unsigned char
             outputFile.write(&c, sizeof(c));
         }
     }
-
-
     //Write separator
     unsigned char separator = 255;
     for (int i = 0; i < 8; ++i) {
         outputFile.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
     }
-    //Write the size of the compressed data
-    size = compressedData.size();
-    outputFile.write(reinterpret_cast<const char*>(&size), sizeof(size));
-
-
-    //Write the compressed data
-    outputFile.write(reinterpret_cast<const char*>(&compressedData[0]), compressedData.size());
 }
 
 unordered_map<unsigned char, string> readHuffmanCodes(ifstream& inputFile){
@@ -106,7 +107,7 @@ void testWriteRead() {
 
     // Write the test data to a file
     ofstream outputFile("test.bin", ios::binary);
-    writeCompressedData(outputFile, huffmanCodes, compressedData);
+    writeCompressedData(outputFile, compressedData);
     outputFile.close();
 
     // Read the test data from the file
@@ -133,7 +134,7 @@ void testWriteRead() {
 
 //Function to process chunks
 tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>> compress_chunk(const vector<unsigned char>&chunk, int chunk_index){
-    cout<<"Processing chunk of size" << chunk.size() << endl;
+    cout<<"Processing chunk of size " << chunk.size() << endl;
     LZ77 lz;
     int window_size = 4096;
     Huffman huff;
@@ -157,6 +158,13 @@ void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t n
         cerr << "Failed to open file." << endl;
         return;
     }
+    // Get the size of the file
+    file.seekg(0, ios::end);
+    size_t file_size = file.tellg();
+    file.seekg(0, ios::beg);
+
+    // Ensure chunk_size does not exceed file_size
+    chunk_size = min(chunk_size, file_size);
 
     //Open the output file
     ofstream outputFile("output.bin", ios::binary);
@@ -167,14 +175,14 @@ void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t n
     //Condition variable to notify threads when there is work to do
     condition_variable cv;
 
+    // Boolean flag to indicate when the file has reached the end
+    bool end_of_file = false;
+
     // Priority queue to store chunks
     auto compare = [](const tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>& a, const tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>& b) {
         return get<0>(a) > get<0>(b);
     };
     priority_queue<tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>, vector<tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>>, decltype(compare)> chunks(compare);
-
-    //Flag to indicate when all chunks have been processed
-    atomic<bool> all_chunks_processed(false);
 
     // Vector to store thread objects
     vector<thread> threads;
@@ -187,10 +195,16 @@ void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t n
             while (true) {
                 // Read chunk from file
                 {
-                    lock_guard<mutex> lock(file_mutex);
+                    unique_lock<mutex> lock(file_mutex);
+                    cv.wait(lock, [&] { return end_of_file || !file.eof(); });
                     if (!file.read(reinterpret_cast<char *>(chunk.data()), chunk_size)) {
-                        break; // End of file
+                        end_of_file = true;
+                        cv.notify_all();
+                        if(file.gcount() == 0){
+                            break; // End of file
+                        }
                     }
+                    cv.notify_one();
                 }
                 // Resize chunk to actual number of bytes read
                 chunk.resize(file.gcount());
@@ -200,7 +214,6 @@ void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t n
                 {
                     lock_guard<mutex> lock(queue_mutex);
                     chunks.push(compressed_chunk);
-                    cv.notify_one();
                 }
                 chunk_index++;
             }
@@ -211,58 +224,34 @@ void compress_file_in_chunks(const string& filename, size_t chunk_size, size_t n
     for (size_t i = 0; i < num_threads; ++i) {
         threads[i].join();
     }
-    all_chunks_processed = true;
 
-    //Merge frequency tables and huffman codes
+    // Merge frequency tables and store chunks for later use
     unordered_map<unsigned char, int> mergedFrequencyTable;
+    vector<tuple<int, unordered_map<unsigned char, int>, vector<unsigned char>>> storedChunks;
     while (!chunks.empty()) {
         auto chunk = chunks.top();
         chunks.pop();
-        for (const auto& pair : get<1>(chunk)) {
+        storedChunks.push_back(chunk);
+        auto frequencyTable = get<1>(chunk);
+        for (const auto& pair : frequencyTable) {
             mergedFrequencyTable[pair.first] += pair.second;
         }
     }
+    // Sort storedChunks by chunk index
+    sort(storedChunks.begin(), storedChunks.end(), [](const auto& a, const auto& b) {
+        return get<0>(a) < get<0>(b);
+    });
 
-    //Generate huffman codes
+    // Build Huffman tree using merged frequency table
     Huffman huff;
     unordered_map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodesFromFreq(mergedFrequencyTable);
+    writeHuffmanCodes(outputFile, huffmanCodes);
 
-    //Prepare for second pass
-    file.close();
-    file.open(filename, ios::binary);
-
-    auto second_pass = [&](size_t thread_id) {
-        vector<unsigned char> chunk(chunk_size);
-        int chunk_index = 0;
-        while (true) {
-            // Read chunk from file
-            {
-                lock_guard<mutex> lock(file_mutex);
-                if (!file.read(reinterpret_cast<char *>(chunk.data()), chunk_size)) {
-                    break; // End of file
-                }
-            }
-            // Resize chunk to actual number of bytes read
-            chunk.resize(file.gcount());
-            // Huffman encode the chunk
-            vector<unsigned char> huffCompressed = huff.encode(chunk, huffmanCodes);
-            //write chunk
-            {
-                lock_guard<mutex> lock(queue_mutex);
-                writeCompressedData(outputFile, huffmanCodes, huffCompressed);
-            }
-            chunk_index++;
-        }
-    };
-
-    // Create threads for second pass
-    vector<thread> second_pass_threads;
-    for (size_t i = 0; i < num_threads; ++i) {
-        second_pass_threads.emplace_back(second_pass, i);
-    }
-    // Wait for all second pass threads to finish
-    for (size_t i = 0; i < num_threads; ++i) {
-        second_pass_threads[i].join();
+    // Encode chunks using Huffman codes and write to output file
+    for (const auto& chunk : storedChunks) {
+        vector<unsigned char> huffCompressed = huff.encode(get<2>(chunk), huffmanCodes);
+        outputFile.seekp(0, ios::end);
+        writeCompressedData(outputFile, huffCompressed);
     }
 
     // Close files

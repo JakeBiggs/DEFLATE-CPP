@@ -15,11 +15,12 @@ static void BM_Deflate(benchmark::State &s){
     csvFile << "File, Compression Time, Decompression Time" << endl;
     int i = 0;
 
-    size_t chunk_size = 1024 * 1024 * 10; //10MB
+    size_t chunk_size = 1024 * 1024; //10MB
     size_t num_threads = 5;
 
     for (auto _ : s){
         for (const auto& file : files) {
+
             auto start = chrono::high_resolution_clock::now();
             compress_file_in_chunks(file,chunk_size,num_threads);
             auto end = chrono::high_resolution_clock::now();
@@ -78,7 +79,8 @@ void compress(string path, string outputFilename){
     cout << "Generated Huffman Codes" << endl;
     vector<unsigned char> huffCompressed = huff.encode(compressed, huffmanCodes);
     cout << "Huffman Encoded" << endl;
-    writeCompressedData(outputFile, huffmanCodes, huffCompressed);
+    writeHuffmanCodes(outputFile, huffmanCodes);
+    writeCompressedData(outputFile, huffCompressed);
     cout << "Compressed File Saved" << endl;
 
 }
