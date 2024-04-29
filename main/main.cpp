@@ -10,20 +10,24 @@ using namespace std;
 
 static void BM_Deflate(benchmark::State &s){
     //Define list of files to test
-    vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt","bee-movie-200.txt","bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
-    //vector<string> files = {"bee-movie-200.txt"};//,"bee-movie-300.txt","bee-movie-400.txt"};//,"bee-movie-500.txt"};
+    //vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt","bee-movie-200.txt","bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
+    vector<string> files = {"bee-movie-10.txt"};//,"bee-movie-300.txt","bee-movie-400.txt"};//,"bee-movie-500.txt"};
     ofstream csvFile("results.csv");
     csvFile << "File, Compression Time, Decompression Time, Compression Ratio" << endl;
     int i = 0;
     for (auto _ : s){
         for (const auto& file : files) {
             auto start = chrono::high_resolution_clock::now();
-            compress(file, "output.bin");
+            unordered_map<unsigned char, string> codes = compress(file, "output.bin");
+            //LZ77compress(file, "output.bin");
+            //huffmanCompress(file, "output.bin");
             auto end = chrono::high_resolution_clock::now();
             chrono::duration<double> compressTime = end - start;
 
             start = chrono::high_resolution_clock::now();
-            decompress("output.bin", "output.txt");
+            decompress("output.bin", "output.txt", codes);
+            //LZ77decompress("output.bin", "output.txt");
+            //huffmanDecompress("output.bin", "output.txt");
             end = chrono::high_resolution_clock::now();
             chrono::duration<double> decompressTime = end - start;
 
@@ -68,8 +72,7 @@ void testWriteRead() {
 }
 
 
-
-void compress(string path, string outputFilename){
+unordered_map<unsigned char, string> compress(string path, string outputFilename){
 
     //Memory Mapping
     std::error_code error;
@@ -78,7 +81,7 @@ void compress(string path, string outputFilename){
     mmap.map(path, error);
     if (error) {
         std::cout << "Error mapping file: " << error.message() << std::endl;
-        return;
+        return unordered_map<unsigned char, string>();
     }
 
 
@@ -92,37 +95,9 @@ void compress(string path, string outputFilename){
     ofstream outputFile(outputFilename, ios::binary);
     Huffman huff;
 
-    /*
-    // Process the file in chunks
-    const size_t chunk_size = 1024 * 1024; // 1MB
-    for (size_t i = 0; i < mmap.size(); i += chunk_size) {
-        // Get the current chunk from the memory mapped file
-        size_t current_chunk_size = std::min(chunk_size, mmap.size() - i);
-        std::vector<unsigned char> data(mmap.data() + i, mmap.data() + i + current_chunk_size);
-
-        // Compress the chunk
-        vector<unsigned char> compressed = lz.compress(data, window_size);
-        cout << "LZ77 Compression Complete for chunk " << i / chunk_size << endl;
-
-        // Compress the LZ77 output using Huffman coding
-        map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(compressed);
-        vector<unsigned char> huffCompressed = huff.encode(compressed, huffmanCodes);
-        cout << "Huffman Compression Complete for chunk " << i / chunk_size << endl;
-
-        // Write the compressed data and huffman codes
-        writeCompressedData(outputFile, huffmanCodes, huffCompressed);
-
-    }
-
-
-    outputFile.close();
-    */
-
     // Compress the file
     vector<unsigned char> compressed = lz.compress(data, window_size);
     cout << "LZ77 Compression Complete" << endl;
-
-
 
     //map<char, int> freq = huff.countBytes(compressed);
     //cout << "Huff counted bytes" << endl;
@@ -132,10 +107,10 @@ void compress(string path, string outputFilename){
     cout << "Huffman Encoded" << endl;
     writeCompressedData(outputFile, huffmanCodes, huffCompressed);
     cout << "Compressed File Saved" << endl;
-
+    return huffmanCodes;
 }
 
-void decompress(string path, string outputFilename){
+void decompress(string path, string outputFilename, unordered_map<unsigned char, string> oldHuffmanCodes){
 
     LZ77 lz;
     Huffman huff;
@@ -158,11 +133,16 @@ void decompress(string path, string outputFilename){
     */
     // Get the data from the memory mapped file
     unordered_map<unsigned char, string> huffmanCodes = readHuffmanCodes(inputFile);
+    if (oldHuffmanCodes != huffmanCodes){
+        cerr << "huffman codes not matching :-(" <<endl;
+    }else{
+        cout <<"HUFFMAN CODES DO IN FACT MATCH!!!!" <<endl;
+    }
     vector<unsigned char> huffCompressed = readCompressedData(inputFile);
 
     cout << "Beginning Decompression..." << endl;
     // Decompress the huffman encoding
-    vector<unsigned char> huffDecompressed = huff.decode(huffCompressed, huffmanCodes);
+    vector<unsigned char> huffDecompressed = huff.decode(huffCompressed, oldHuffmanCodes);
     cout << "Huffman decoded" << endl;
 
     // Decompress the LZ77 encoding
