@@ -1,5 +1,5 @@
 #include "LZ77.h"
-
+#include <functional>
 
 vector<unsigned char> LZ77::loadFile(const string& filename) {
     // Open the file
@@ -24,45 +24,94 @@ void LZ77::saveFile(const string& filename, const vector<unsigned char>& byteStr
     outfile.write(reinterpret_cast<const char*>(&byteStream[0]), byteStream.size());
     outfile.close();
 }
-
-vector<unsigned char> LZ77::compress(const vector<unsigned char>& input, int window_size) {
+vector<unsigned char> LZ77::working_compress(const vector<unsigned char>& input, int window_size) {
     vector<LZ77Token> output;
-    deque<unsigned char> window;
+    int i = 0; //i represents the current position in the input data
+    // j represents the start of the match in the sliding window
+    // k represents the length of the match
+    //The sliding window is being defined implicitly from position i-window_size to i
 
-    for (int i = 0; i < input.size();) {
-        int match_distance = 0, match_length = 0;
-        for (int j = 1; j <= window_size && i - j >= 0; ++j) {
-            int k = 0;
-            while (k < window_size && i + k < input.size() && input[i + k] == input[i - j + k]) {
-                ++k;
+    // Loop over the input data
+    //int input_size = input.size();
+    while (i < input.size()) {
+        uint16_t match_distance = 0;
+        uint16_t match_length = 0;
+
+        // Search for a match in the  sliding window
+        for (int j = i - window_size; j < i; j++) {
+            if (j < 0) continue; // Skip the invalid index
+
+            int k = 0; //k represents the length of the match
+            // Extend the match as far as possible:
+            // j+k = distance to end of the match
+            // i+k = distance to end of the match
+            // Checking against input.size() ensures we don't go out of bounds of the data
+            while (j + k < input.size() && i + k < input.size() && input[j + k] == input[i + k] && k < window_size) {
+                k++; // Increment the length of the match
             }
+            // If this match is longer than the previous best match, update the best match
             if (k > match_length) {
-                match_distance = j;
+                match_distance = i - j;
                 match_length = k;
             }
         }
-        if (match_length > 0 && i + match_length < input.size()) {
-            output.push_back(LZ77Token(match_distance, match_length, input[i + match_length]));
-            for (int j = 0; j <= match_length; ++j) {
-                window.push_back(input[i + j]);  // push all characters that were part of the match
-                if (window.size() > window_size) {
-                    window.pop_front();
-                }
-            }
-            i += match_length + 1;  // increment i by match_length + 1 only once
-        } else if (i < input.size()) {
-            output.push_back(LZ77Token(0, 0, input[i]));
-            window.push_back(input[i]);
-            if (window.size() > window_size) {
-                window.pop_front();
-            }
-            ++i;
-        }
+
+        // Get the next character after the match
+        // If at the end of the input, use a null character
+        //char next = input[i + match_length];
+        unsigned char next = (i + match_length < input.size()) ? input[i + match_length] : '\0';
+
+        // Add the LZ77 token to the output
+        output.push_back({ match_distance, match_length, next });
+
+        // Move the window
+        i += match_length + 1;
     }
 
+    //Create a vector to hold a bytestream (needed for huffman)
     vector<unsigned char> byteStream = tokensToByteStream(output);
 
     return byteStream;
+}
+
+
+
+
+vector<unsigned char> LZ77::compress(const vector<unsigned char>& input, int window_size) {
+    TrieNode* root = new TrieNode();
+    vector<LZ77Token> output;
+
+    for (int i = 0; i < input.size(); i++) {
+        TrieNode* node = root;
+        int j = i;
+
+        while (j < input.size() && node->children.count(input[j])) {
+            node = node->children[input[j]];
+            j++;
+        }
+
+        if (node != root) {
+            uint16_t match_distance = i - node->start;
+            uint16_t match_length = node->end - node->start;
+            unsigned char next = (i + match_length < input.size()) ? input[i + match_length] : '\0';
+            output.push_back({ match_distance, match_length, next });
+            i += match_length;
+        } else {
+            output.push_back({ 0, 0, input[i] });
+        }
+
+        node = root;
+        for (int k = i; k < j; k++) {
+            if (!node->children.count(input[k])) {
+                node->children[input[k]] = new TrieNode();
+            }
+            node = node->children[input[k]];
+            node->start = min(node->start, k);
+            node->end = max(node->end, k);
+        }
+    }
+
+    return tokensToByteStream(output);
 }
 
 vector<unsigned char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
@@ -149,3 +198,4 @@ vector<LZ77Token> LZ77::byteStreamToTokens(const vector<unsigned char>& byteStre
 
     return tokens;
 }
+

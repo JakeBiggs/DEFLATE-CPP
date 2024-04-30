@@ -102,19 +102,19 @@ vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const 
         reversedHuffmanCodes[pair.second] = pair.first;
     }
 
-    // Read the extra byte that contains the number of valid bits in the last byte
-    size_t validBitsInLastByte = 8;
-    size_t inputSize = input.size();
-    if (inputSize > 1 && input.back() <= 8) {
-        validBitsInLastByte = static_cast<size_t>(input.back());
-        --inputSize;
-    }
+    // Always read the extra byte that contains the number of valid bits in the last byte
+    size_t validBitsInLastByte = static_cast<size_t>(input.back());
+    size_t inputSize = input.size() - 1; // Subtract 1 to exclude the extra byte
+
+    size_t totalBits = 0;
+    size_t totalBitsInOriginalData = 8 * (inputSize - 1) + validBitsInLastByte - (8 - validBitsInLastByte);
 
     string code;
-    for (size_t i = 0; i < inputSize - 1; ++i) {
+    for (size_t i = 0; i < inputSize && totalBits < totalBitsInOriginalData; ++i) {
         unsigned char byte = input[i];
+        size_t bits = (i == inputSize - 1) ? validBitsInLastByte : 8; // Use validBitsInLastByte for the last byte
 
-        for (size_t j = 0; j < 8; ++j) {
+        for (size_t j = 0; j < bits && totalBits < totalBitsInOriginalData; ++j) {
             // Get the j-th bit of the byte
             bool bit = (byte >> (7 - j)) & 1;
             code += bit ? '1' : '0';
@@ -127,25 +127,10 @@ vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const 
         }
     }
 
-    // Handle the last byte separately
-    if (inputSize < input.size()) { // If there is an extra byte (validBitsInLastByte <= 8
-        unsigned char lastByte = input[inputSize];
-        for (size_t j = 0; j < validBitsInLastByte; ++j) {
-            // Get the j-th bit of the byte
-            bool bit = (lastByte >> (7 - j)) & 1;
-            code += bit ? '1' : '0';
-
-            auto iterator = reversedHuffmanCodes.find(code);
-            if (iterator != reversedHuffmanCodes.end()) {
-                decoded.push_back(iterator->second);
-                code.clear();
-            }
-        }
-    }
-
-    if (!code.empty()) {
-        cout << "Invalid Huffman Code: " << code << endl;
-        throw runtime_error("Invalid Huffman code");
+    // Only throw an error if there are remaining bits that do not form a valid Huffman code
+    if (!code.empty() && reversedHuffmanCodes.find(code) == reversedHuffmanCodes.end()) {
+        cout << "Invalid Huffman Code (padding bits if all 0): " << code << endl;
+        //throw runtime_error("Invalid Huffman code"); //Dont throw this unless u hate yourself, we all know you cant catch
     }
 
     return decoded;

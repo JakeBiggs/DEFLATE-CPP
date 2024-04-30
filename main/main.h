@@ -24,8 +24,22 @@ void writeCompressedData(ofstream& outputFile, const unordered_map<unsigned char
         outputFile.write(reinterpret_cast<const char*>(&pair.first), sizeof(pair.first)); //Write the byte
         size_t length = pair.second.size(); //Get the length of the huffman code
         outputFile.write(reinterpret_cast<const char*>(&length), sizeof(length)); //Write the length of the huffman code
-        for (char c : pair.second) { //Write each character of the huffman code
-            outputFile.write(&c, sizeof(c));
+
+        // Write the Huffman code bit by bit
+        unsigned char byte = 0;
+        int bitCount = 0;
+        for (char bit : pair.second) {
+            byte = (byte << 1) | (bit == '1');
+            if (++bitCount == 8) {
+                outputFile.write(reinterpret_cast<const char*>(&byte), sizeof(byte));
+                byte = 0;
+                bitCount = 0;
+            }
+        }
+        // Write any remaining bits
+        if (bitCount > 0) {
+            byte <<= (8 - bitCount);
+            outputFile.write(reinterpret_cast<const char*>(&byte), sizeof(byte));
         }
     }
 
@@ -51,11 +65,17 @@ unordered_map<unsigned char, string> readHuffmanCodes(ifstream& inputFile){
         size_t length;
         inputFile.read(reinterpret_cast<char*>(&length), sizeof(length)); //Read the length of the huffman code
 
+        // Read the Huffman code bit by bit
         string value;
-        for (size_t j = 0; j < length; ++j) { //Read each character of the huffman code
-            char c;
-            inputFile.read(&c, sizeof(c));
-            value += c;
+        int bitCount = 0;
+        unsigned char c;
+        for (size_t j = 0; j < length; ++j) {
+            if (bitCount == 0) {
+                inputFile.read(reinterpret_cast<char*>(&c), sizeof(c));
+                bitCount = 8;
+            }
+            value += ((c >> (bitCount - 1)) & 1) ? '1' : '0';
+            --bitCount;
         }
 
         huffmanCodes[byte] = value;
@@ -97,10 +117,10 @@ void readUntilEndOfCodes() {
     inputFile.close();
 }
 
-unordered_map<unsigned char, string> compress(string path, string outputFilename);
+void compress(string path, string outputFilename, int cv);
 void LZ77compress(string path, string outputFilename){
     LZ77 lz;
-    int window_size = 4096;
+    int window_size = 4096 * 4;
 
     //Memory Mapping
     std::error_code error;
@@ -145,7 +165,7 @@ void huffmanCompress(string path, string outputFilename){
 
 }
 
-void decompress(string path, string outputFilename, unordered_map<unsigned char, string> codes);
+void decompress(string path, string outputFilename);
 void LZ77decompress(string path, string outputFilename){
     LZ77 lz;
     int window_size = 4096;
