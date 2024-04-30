@@ -78,40 +78,56 @@ vector<unsigned char> LZ77::working_compress(const vector<unsigned char>& input,
 
 
 vector<unsigned char> LZ77::compress(const vector<unsigned char>& input, int window_size) {
-    TrieNode* root = new TrieNode();
     vector<LZ77Token> output;
+    int i = 0; //i represents the current position in the input data
 
-    for (int i = 0; i < input.size(); i++) {
-        TrieNode* node = root;
-        int j = i;
+    // Initialize two instances of RollingHash
+    RollingHash windowHash, lookAheadHash;
 
-        while (j < input.size() && node->children.count(input[j])) {
-            node = node->children[input[j]];
-            j++;
-        }
+    // Loop over the input data
+    while (i < input.size()) {
+        uint16_t match_distance = 0;
+        uint16_t match_length = 0;
 
-        if (node != root) {
-            uint16_t match_distance = i - node->start;
-            uint16_t match_length = node->end - node->start;
-            unsigned char next = (i + match_length < input.size()) ? input[i + match_length] : '\0';
-            output.push_back({ match_distance, match_length, next });
-            i += match_length;
-        } else {
-            output.push_back({ 0, 0, input[i] });
-        }
+        // Reset the lookAheadHash for each new position i
+        lookAheadHash = RollingHash();
 
-        node = root;
-        for (int k = i; k < j; k++) {
-            if (!node->children.count(input[k])) {
-                node->children[input[k]] = new TrieNode();
+        // Search for a match in the sliding window
+        for (int j = i - window_size; j < i; j++) {
+            if (j < 0) continue; // Skip the invalid index
+
+            // Add the current character to the lookAheadHash
+            lookAheadHash.append(input[i]);
+
+            // If the windowHash and the lookAheadHash match, update match_distance and match_length
+            if (windowHash.hash() == lookAheadHash.hash()) {
+                match_distance = i - j;
+                match_length = lookAheadHash.size();
             }
-            node = node->children[input[k]];
-            node->start = min(node->start, k);
-            node->end = max(node->end, k);
+
+            // Add the current character to the windowHash, and remove the character that's no longer in the window
+            windowHash.append(input[j]);
+            if (windowHash.size() > window_size) {
+                windowHash.skip(input[j - window_size]);
+            }
+        }
+
+        // If a match was found, add the LZ77 token to the output
+        if (match_length > 0) {
+            output.push_back(LZ77Token(match_distance, match_length, input[i + match_length]));
+            // Move to the next position in the input
+            i += match_length + 1;
+        } else {
+            // If no match was found, add a token with a single character and move to the next position
+            output.push_back(LZ77Token(0, 0, input[i]));
+            i++;
         }
     }
 
-    return tokensToByteStream(output);
+    // Convert the output to a byte stream
+    vector<unsigned char> byteStream = tokensToByteStream(output);
+
+    return byteStream;
 }
 
 vector<unsigned char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {

@@ -6,21 +6,7 @@
 #include <map>
 #include <deque>
 using namespace std;
-/*
-struct TrieNode {
-    TrieNode* parent;
-    map<unsigned char, TrieNode*> children;
-    deque<int> indices;
-    int numChildren = 0;
 
-    TrieNode(TrieNode* parent = nullptr) : parent(parent) {}
-};
-*/
-struct TrieNode {
-    map<char, TrieNode*> children;
-    int start = -1;
-    int end = -1;
-};
 
 struct LZ77Token {
     uint16_t offset;
@@ -40,4 +26,48 @@ public:
     void decompressToFile(const vector<unsigned char>& compressedData, const string& filename);
     vector<unsigned char> tokensToByteStream(const vector<LZ77Token>& tokens);
     vector<LZ77Token> byteStreamToTokens(const vector<unsigned char>& byteStream);
+};
+
+class RollingHash {
+    // BASE is a prime number close to the number of characters in the input alphabet (255 or 256 in ascii i think)
+    static const unsigned long long BASE = 257;
+    // MOD is a large prime number to reduce the chance of hash collisions
+    static const unsigned long long MOD = 1000000007;
+    // hashValue is the current hash value
+    unsigned long long hashValue;
+    // basePower is the current power of BASE, equal to BASE raised to the power of the length of the substring
+    unsigned long long basePower;
+    // length is the current length of the substring
+    int length;
+
+public:
+    // Constructor initializes hashValue, basePower, and length to their initial values
+    RollingHash() : hashValue(0), basePower(1), length(0) {}
+
+    // append method adds a character to the end of the substring and updates the hash value accordingly
+    void append(char c) {
+        hashValue = (hashValue * BASE + c) % MOD;
+        basePower = (basePower * BASE) % MOD;
+        ++length;
+    }
+
+    // skip method removes a character from the beginning of the substring and updates the hash value accordingly
+    void skip(char c) {
+        if (length == 0) {
+            throw std::runtime_error("Cannot skip a character from an empty hash");
+        }
+        hashValue = ((hashValue - c * basePower % MOD + MOD) * BASE) % MOD;
+        basePower = (basePower / BASE) % MOD;
+        --length;
+    }
+
+    // hash method returns the current hash value
+    unsigned long long hash() const {
+        return hashValue;
+    }
+
+    // size method returns the current length of the substring
+    int size() const {
+        return length;
+    }
 };
