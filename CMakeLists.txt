@@ -14,7 +14,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(Huffman)
 add_subdirectory(LZ77)
 add_subdirectory(main)
-
+include_directories("/home/git/xxHash")
+link_directories("/home/git/xxHash")
 
 set(CMAKE_CXX_STANDARD 17)
 set_property(GLOBAL PROPERTY CXX_STANDARD 20)

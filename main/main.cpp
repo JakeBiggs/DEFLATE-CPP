@@ -11,22 +11,22 @@ using namespace std;
 static void BM_Deflate(benchmark::State &s){
     //Define list of files to test
     //vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt"};//,"bee-movie-200.txt","bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
-    vector<string> files = {"bee-movie.txt"};//,"bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
+    vector<string> files = {"bee-movie-500.txt"};//,"bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
     ofstream csvFile("results.csv");
     csvFile << "File, Compression Time, Decompression Time" << endl;
     int i = 0;
     for (auto _ : s){
         for (const auto& file : files) {
             auto start = chrono::high_resolution_clock::now();
-            //compress(file, "output.bin",1);
-            LZ77compress(file, "output.bin");
+            compress(file, "output.bin",0);
+            //LZ77compress(file, "output.bin");
             //huffmanCompress(file, "output.bin");
             auto end = chrono::high_resolution_clock::now();
             chrono::duration<double> compressTime = end - start;
 
             start = chrono::high_resolution_clock::now();
-            //decompress("output.bin", "output.txt");
-            LZ77decompress("output.bin", "output.txt");
+            decompress("output.bin", "output.txt");
+            //LZ77decompress("output.bin", "output.txt");
             //huffmanDecompress("output.bin", "output.txt");
             end = chrono::high_resolution_clock::now();
             chrono::duration<double> decompressTime = end - start;

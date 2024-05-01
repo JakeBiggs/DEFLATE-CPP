@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <map>
 #include <deque>
+#include <xxhash.h>
 using namespace std;
 
 
@@ -44,6 +45,12 @@ public:
     // Constructor initializes hashValue, basePower, and length to their initial values
     RollingHash() : hashValue(0), basePower(1), length(0) {}
 
+    // Constructor that takes an initial size for the hash
+    RollingHash(int initialSize) : hashValue(0), basePower(1), length(0) {
+        for (int i = 0; i < initialSize; i++) {
+            basePower = (basePower * BASE) % MOD;
+        }
+    }
     // append method adds a character to the end of the substring and updates the hash value accordingly
     void append(char c) {
         hashValue = (hashValue * BASE + c) % MOD;
@@ -59,6 +66,13 @@ public:
         hashValue = ((hashValue - c * basePower % MOD + MOD) * BASE) % MOD;
         basePower = (basePower / BASE) % MOD;
         --length;
+    }
+
+    // Reset method resets hashValue, basePower, and length to their initial values
+    void clear() {
+        hashValue = 0;
+        basePower = 1;
+        length = 0;
     }
 
     // hash method returns the current hash value

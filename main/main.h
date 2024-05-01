@@ -120,7 +120,7 @@ void readUntilEndOfCodes() {
 void compress(string path, string outputFilename, int cv);
 void LZ77compress(string path, string outputFilename){
     LZ77 lz;
-    int window_size = 4096 * 4;
+    int window_size = 4096;
 
     //Memory Mapping
     std::error_code error;
