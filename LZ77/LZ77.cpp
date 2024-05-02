@@ -24,7 +24,8 @@ void LZ77::saveFile(const string& filename, const vector<unsigned char>& byteStr
     outfile.write(reinterpret_cast<const char*>(&byteStream[0]), byteStream.size());
     outfile.close();
 }
-vector<unsigned char> LZ77::working_compress(const vector<unsigned char>& input, int window_size) {
+
+vector<unsigned char> LZ77::working_compress(const vector<unsigned char> &input, int window_size) {
     vector<LZ77Token> output;
     int i = 0; //i represents the current position in the input data
     // j represents the start of the match in the sliding window
@@ -67,78 +68,124 @@ vector<unsigned char> LZ77::working_compress(const vector<unsigned char>& input,
         // Move the window
         i += match_length + 1;
     }
-
+    ofstream tokenfile("tokens_working.txt");
+    for (const auto& token: output){
+        tokenfile << "Token: (Offset: "<< token.offset << ", Length: "<< token.length<<", Next: "<< token.next<<")\n";
+    }
+    tokenfile.close();
     //Create a vector to hold a bytestream (needed for huffman)
     vector<unsigned char> byteStream = tokensToByteStream(output);
 
     return byteStream;
 }
 
+#include <sdsl/suffix_arrays.hpp>
 
-vector<unsigned char> LZ77::compress(const vector<unsigned char>& input, int window_size) {
+vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int window_size) {
     vector<LZ77Token> output;
-    int i = 0;
+    ifstream file("bee-movie.txt", ios::binary);
 
-    map<unsigned long long, deque<int>> tree;
+    vector<unsigned char> text((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 
-    while (i < input.size()) {
-        uint16_t match_distance = 0;
-        uint16_t match_length = 0;
+    // Construct lexicographically sorted suffix array
+    sdsl::csa_wt<> csa;
+    sdsl::construct_im(csa, text, 0);
 
-        for (int j = i; j < i + window_size && j < input.size(); j++) {
-            // Compute the hash of the current substring using xxHash
-            unsigned long long hash = XXH64(&input[j], window_size, 0);
+    for (int i = 0; i < input.size(); ) {
+        // Start with a pattern of one character
+        vector<unsigned char> pattern(input.begin() + i, input.begin() + i + 1);
+        int match = -1;
 
-            auto it = tree.find(hash);
-            if (it != tree.end()) {
-                auto& positions = it->second;
-                while (!positions.empty() && positions.front() < i - window_size) {
-                    positions.pop_front();
-                }
-                for (auto pos : positions) {
-                    if (j - i > match_length) {
-                        // Check if the sequences actually match
-                        if (equal(input.begin() + pos, input.begin() + pos + (j - i), input.begin() + i)) {
-                            // Only update the match if it's longer than the current longest match
-                            match_distance = i - pos;
-                            match_length = j - i;
-                        }
-                    }
-                }
+        // Extend the pattern until no match is found
+        while (i + pattern.size() <= input.size()) {
+            int new_match = sa_binary_search(csa, pattern);
+            if (new_match == -1) {
+                break;
             }
-            // Perform insertions only when a match ends or the maximum match length is reached
-            tree[hash].push_back(j);
+            match = new_match;
+            pattern.push_back(input[i + pattern.size()]);
         }
 
-        unsigned char next = (i + match_length < input.size()) ? input[i + match_length] : '\0';
-
-        if (match_length > 0 && i + match_length < input.size()) {
-            output.push_back(LZ77Token(match_distance, match_length, next));
-            i += match_length + 1;
+        // If no match is found for the single character pattern
+        if (match == -1) {
+            output.push_back(LZ77Token(0, 0, input[i]));
+            ++i;
         } else {
-            output.push_back(LZ77Token(0, 0, next));
-            i++;
-        }
+            // Output token (position, length, S[j])
+            output.push_back(LZ77Token(match, pattern.size() - 1, input[i + pattern.size() - 1]));
 
-        if (i >= window_size) {
-            unsigned long long hash = XXH64(&input[i - window_size], window_size, 0);
-            auto it = tree.find(hash);
-            if (it != tree.end()) {
-                auto& positions = it->second;
-                while (!positions.empty() && positions.front() < i - window_size) {
-                    positions.pop_front();
-                }
-                if (positions.empty()) {
-                    tree.erase(it);
-                }
-            }
+            // Move to the next position after the match
+            i += pattern.size();
         }
     }
 
-    vector<unsigned char> byteStream = tokensToByteStream(output);
-
-    return byteStream;
+    ofstream tokenfile("tokens_SA.txt");
+    for (const auto& token: output){
+        tokenfile << "Token: (Offset: "<< token.offset << ", Length: "<< token.length<<", Next: "<< token.next<<")\n";
+    }
+    tokenfile.close();
+    return tokensToByteStream(output);
 }
+
+
+
+
+
+/*
+vector<unsigned char> LZ77::compress(const vector<unsigned char>& input, int window_size) {
+    vector<LZ77Token> output;
+    int n = input.size();
+
+    // Adjust window_size if input is smaller
+    if (n < window_size) {
+        window_size = n;
+    }
+
+    // Construct the compressed suffix array for the entire input
+    sdsl::int_vector<8> text(n);
+    for (int i = 0; i < n; ++i) {
+        text[i] = input[i];
+    }
+    sdsl::csa_wt<> csa;
+    sdsl::construct_im(csa, text, 0);
+
+// Construct the LCP array for the entire input
+    sdsl::lcp_wt<> lcp;
+    sdsl::construct_im(lcp, csa);
+
+    int i = 0; // i represents the current position in the input data
+    while (i < n) {
+        uint16_t match_distance = 0;
+        uint16_t match_length = 0;
+
+        // Find the longest match in the window
+        for (int j = max(0, i - window_size); j < i; ++j) {
+            int l = 0;
+            while (i + l < n && input[j + l] == input[i + l]) {
+                ++l;
+            }
+            if (l > match_length) {
+                match_length = l;
+                match_distance = i - j;
+            }
+        }
+
+        // Get the next character after the match
+        unsigned char next = (i + match_length < n) ? input[i + match_length] : '\0';
+
+        // Add the LZ77 token to the output
+        output.push_back({match_distance, match_length, next});
+
+        // Move the window
+        i += match_length + 1;
+    }
+
+    return tokensToByteStream(output);
+}
+ */
+
+
+
 
 
 vector<unsigned char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {

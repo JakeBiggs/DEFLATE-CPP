@@ -5,7 +5,11 @@
 #include <unordered_map>
 #include <map>
 #include <deque>
-#include <xxhash.h>
+#include<xxhash.h>
+#include <divsufsort.h>
+#include <divsufsort64.h>
+#include <sdsl/suffix_arrays.hpp>
+#include <sdsl/lcp.hpp>
 using namespace std;
 
 
@@ -27,61 +31,60 @@ public:
     void decompressToFile(const vector<unsigned char>& compressedData, const string& filename);
     vector<unsigned char> tokensToByteStream(const vector<LZ77Token>& tokens);
     vector<LZ77Token> byteStreamToTokens(const vector<unsigned char>& byteStream);
+
+
+    int sa_binary_search(const sdsl::csa_wt<>& sa, const vector<unsigned char>& pattern) {
+        int left = 0;
+        int right = sa.size();
+        int longest_match = -1;
+        int longest_match_length = 0;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            int mid_value = sa[mid];
+            int cmp = 0;
+            for (int i = 0; i < pattern.size() && mid_value + i < sa.size(); ++i) {
+                if (pattern[i] != sa[mid_value + i]) {
+                    cmp = pattern[i] - sa[mid_value + i];
+                    break;
+                }
+            }
+
+            if (cmp == 0) {
+                // If a match is found, check if it's the longest match
+                int match_length = 0;
+                while (mid_value + match_length < sa.size() && pattern[match_length] == sa[mid_value + match_length]) {
+                    ++match_length;
+                }
+                if (match_length > longest_match_length) {
+                    longest_match = mid;
+                    longest_match_length = match_length;
+                }
+                // Continue searching in both halves
+                left = mid + 1;
+                right = mid - 1;
+            } else if (cmp < 0) {
+                // If the pattern is less than the mid value, search in the left half
+                right = mid - 1;
+            } else {
+                // If the pattern is greater than the mid value, search in the right half
+                left = mid + 1;
+            }
+        }
+
+        return longest_match;  // Return the position of the longest match
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 };
 
-class RollingHash {
-    // BASE is a prime number close to the number of characters in the input alphabet (255 or 256 in ascii i think)
-    static const unsigned long long BASE = 257;
-    // MOD is a large prime number to reduce the chance of hash collisions
-    static const unsigned long long MOD = 1000000007;
-    // hashValue is the current hash value
-    unsigned long long hashValue;
-    // basePower is the current power of BASE, equal to BASE raised to the power of the length of the substring
-    unsigned long long basePower;
-    // length is the current length of the substring
-    int length;
-
-public:
-    // Constructor initializes hashValue, basePower, and length to their initial values
-    RollingHash() : hashValue(0), basePower(1), length(0) {}
-
-    // Constructor that takes an initial size for the hash
-    RollingHash(int initialSize) : hashValue(0), basePower(1), length(0) {
-        for (int i = 0; i < initialSize; i++) {
-            basePower = (basePower * BASE) % MOD;
-        }
-    }
-    // append method adds a character to the end of the substring and updates the hash value accordingly
-    void append(char c) {
-        hashValue = (hashValue * BASE + c) % MOD;
-        basePower = (basePower * BASE) % MOD;
-        ++length;
-    }
-
-    // skip method removes a character from the beginning of the substring and updates the hash value accordingly
-    void skip(char c) {
-        if (length == 0) {
-            throw std::runtime_error("Cannot skip a character from an empty hash");
-        }
-        hashValue = ((hashValue - c * basePower % MOD + MOD) * BASE) % MOD;
-        basePower = (basePower / BASE) % MOD;
-        --length;
-    }
-
-    // Reset method resets hashValue, basePower, and length to their initial values
-    void clear() {
-        hashValue = 0;
-        basePower = 1;
-        length = 0;
-    }
-
-    // hash method returns the current hash value
-    unsigned long long hash() const {
-        return hashValue;
-    }
-
-    // size method returns the current length of the substring
-    int size() const {
-        return length;
-    }
-};

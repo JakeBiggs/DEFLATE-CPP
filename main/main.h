@@ -118,7 +118,7 @@ void readUntilEndOfCodes() {
 }
 
 void compress(string path, string outputFilename, int cv);
-void LZ77compress(string path, string outputFilename){
+void LZ77compress(string path, string outputFilename, int type){
     LZ77 lz;
     int window_size = 4096;
 
@@ -134,8 +134,14 @@ void LZ77compress(string path, string outputFilename){
 
     // Get the data from the memory mapped file
     vector<unsigned char> data(mmap.data(), mmap.end());
+    vector<unsigned char> compressed = lz.compress(data,window_size);
     // Compress the file
-    vector<unsigned char> compressed = lz.compress(data, window_size);
+    /*
+    if (type==0){
+        vector<unsigned char> compressed = lz.working_compress(data,window_size);
+    }if(type==1) {
+        vector<unsigned char> compressed = lz.compress(data, window_size);
+    }*/
     cout << "LZ77 Compression Complete" << endl;
     lz.saveFile("output.bin", compressed);
 };
