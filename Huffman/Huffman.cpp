@@ -11,36 +11,33 @@ unordered_map<unsigned char, int> Huffman::countBytes(const vector<unsigned char
     return freq;
 }
 
-deque<Node*> Huffman::createNodes(const unordered_map<unsigned char, int>& frequencies) {
-    deque<Node*> nodes;
+
+
+
+priority_queue<Node*, vector<Node*>, Compare> Huffman::createNodes(const unordered_map<unsigned char, int>& frequencies) {
+    priority_queue<Node*, vector<Node*>, Compare> nodes;
     for (const auto& pair : frequencies) {
-        nodes.push_back(new Node(pair.first, pair.second, nullptr, nullptr));
+        nodes.push(new Node(pair.first, pair.second, nullptr, nullptr));
     }
     return nodes;
 }
 
-Node* Huffman::buildTree(deque<Node*>& nodes) {
-    if (nodes.size() == 1) return nodes.front(); // If there is only one node, return it (base case)
+Node* Huffman::buildTree(priority_queue<Node*, vector<Node*>, Compare>& nodes) {
+    if (nodes.size() == 1) return nodes.top(); // If there is only one node, return it (base case)
     if (nodes.empty()) return nullptr; // If there are no nodes, return nullptr
 
-    // More efficient way to build the tree O(n log n)
     while (nodes.size() > 1) {
-        // Sort the nodes by frequency
-        sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) {
-            return a->freq > b->freq;
-        });
-
         // Get the two nodes with the smallest frequency
-        Node* left = nodes.back(); nodes.pop_back();
-        Node* right = nodes.back(); nodes.pop_back();
+        Node* left = nodes.top(); nodes.pop();
+        Node* right = nodes.top(); nodes.pop();
 
         // Create a new node with the two nodes as children
         Node* parent = new Node('\0', left->freq + right->freq, left, right);
 
-        // Add the new node to the deque
-        nodes.push_back(parent);
+        // Add the new node to the priority queue
+        nodes.push(parent);
     }
-    return nodes.front();
+    return nodes.top();
 }
 
 void Huffman::traverseHuffmanTree(Node* node, string& code, int length, unordered_map<unsigned char, string>& huffmanCodes) {
@@ -61,14 +58,13 @@ void Huffman::traverseHuffmanTree(Node* node, string& code, int length, unordere
 
 unordered_map<unsigned char, string> Huffman::generateHuffmanCodes(const vector<unsigned char>& input) {
     unordered_map<unsigned char, int> freq = countBytes(input);
-    deque<Node*> nodes = createNodes(freq);
+    priority_queue<Node*, vector<Node*>, Compare> nodes = createNodes(freq);
     Node* root = buildTree(nodes);
     unordered_map<unsigned char, string> huffmanCodes;
     string code(256, '\0');
     traverseHuffmanTree(root, code, 0, huffmanCodes);
     return huffmanCodes;
 }
-
 vector<unsigned char> Huffman::encode(const vector<unsigned char>& input, const unordered_map<unsigned char, string>& huffmanCodes) {
     vector<unsigned char> encoded;
     int length = 0;

@@ -19,15 +19,15 @@ static void BM_Deflate(benchmark::State &s){
         for (const auto& file : files) {
             auto start = chrono::high_resolution_clock::now();
             //compress(file, "output.bin",0);
-            LZ77compress(file, "output.bin", 0);
-            //huffmanCompress(file, "output.bin");
+            //LZ77compress(file, "output.bin", 0);
+            huffmanCompress(file, "output.bin");
             auto end = chrono::high_resolution_clock::now();
             chrono::duration<double> compressTime = end - start;
 
             start = chrono::high_resolution_clock::now();
             //decompress("output.bin", "output.txt");
-            LZ77decompress("output.bin", "output.txt");
-            //huffmanDecompress("output.bin", "output.txt");
+            //LZ77decompress("output.bin", "output.txt");
+            huffmanDecompress("output.bin", "output.txt");
             end = chrono::high_resolution_clock::now();
             chrono::duration<double> decompressTime = end - start;
 
