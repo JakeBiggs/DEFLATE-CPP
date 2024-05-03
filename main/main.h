@@ -117,7 +117,7 @@ void readUntilEndOfCodes() {
     inputFile.close();
 }
 
-void compress(string path, string outputFilename, int cv);
+void compress(string path, string outputFilename, int lz_cv, int hf_cv);
 void LZ77compress(string path, string outputFilename, int type){
     LZ77 lz;
     int window_size = 4096;
@@ -134,7 +134,20 @@ void LZ77compress(string path, string outputFilename, int type){
 
     // Get the data from the memory mapped file
     vector<unsigned char> data(mmap.data(), mmap.end());
-    vector<unsigned char> compressed = lz.compress(data,window_size);
+    vector<unsigned char> compressed;
+    if (type ==0){
+        compressed = lz.working_compress(data,window_size);
+    }
+    if (type ==1){
+        compressed = lz.compress(data,window_size);
+    }
+    if (type ==2){
+        compressed = lz.deque_compress(data,window_size);
+    }
+    if (type ==3){
+        compressed = lz.rabin_karp_compress(data, window_size);
+    }
+
     // Compress the file
     /*
     if (type==0){
@@ -146,7 +159,7 @@ void LZ77compress(string path, string outputFilename, int type){
     lz.saveFile("output.bin", compressed);
 };
 
-void huffmanCompress(string path, string outputFilename){
+void huffmanCompress(string path, string outputFilename, int cv){
     ofstream outputFile(outputFilename, ios::binary);
     Huffman huff;
 
@@ -161,17 +174,26 @@ void huffmanCompress(string path, string outputFilename){
     }
     // Get the data from the memory mapped file
     vector<unsigned char> data(mmap.data(), mmap.end());
-
+    if (cv==0){
     unordered_map<unsigned char, string> huffmanCodes = huff.generateHuffmanCodes(data);
     cout << "Generated Huffman Codes" << endl;
     vector<unsigned char> huffCompressed = huff.encode(data, huffmanCodes);
     cout << "Huffman Encoded" << endl;
     writeCompressedData(outputFile, huffmanCodes, huffCompressed);
     cout << "Compressed File Saved" << endl;
+    }
+    if (cv ==2){
+        unordered_map<unsigned char, string> huffmanCodes = huff.deque_generateHuffmanCodes(data);
+        cout << "Generated Huffman Codes" << endl;
+        vector<unsigned char> huffCompressed = huff.deque_encode(data, huffmanCodes);
+        cout << "Huffman Encoded" << endl;
+        writeCompressedData(outputFile, huffmanCodes, huffCompressed);
+        cout << "Compressed File Saved" << endl;
+    }
 
 }
 
-void decompress(string path, string outputFilename);
+void decompress(string path, string outputFilename, int hf_dv);
 void LZ77decompress(string path, string outputFilename){
     LZ77 lz;
     int window_size = 4096;
@@ -186,7 +208,7 @@ void LZ77decompress(string path, string outputFilename){
     lz.saveFile(outputFilename, decompressed);
     cout << "Saved Output" << endl;
 };
-void huffmanDecompress(string path, string outputFilename){
+void huffmanDecompress(string path, string outputFilename, int dv){
     Huffman huff;
     LZ77 lz;
     ifstream inputFile(path, ios::binary);
@@ -195,10 +217,20 @@ void huffmanDecompress(string path, string outputFilename){
     vector<unsigned char> huffCompressed = readCompressedData(inputFile);
 
     cout << "Beginning Decompression..." << endl;
+    if (dv ==0){
     // Build the trie from the Huffman codes
     TrieNode* root = huff.buildTrie(huffmanCodes);
     // Decompress the huffman encoding
     vector<unsigned char> huffDecompressed = huff.decode(huffCompressed, root);
     cout << "Huffman decoded" << endl;
     lz.saveFile(outputFilename, huffDecompressed);
+    }
+    if(dv==2){
+        TrieNode* root = huff.buildTrie(huffmanCodes);
+        // Decompress the huffman encoding
+        vector<unsigned char> huffDecompressed = huff.deque_decode(huffCompressed, huffmanCodes);
+        cout << "Huffman decoded" << endl;
+        lz.saveFile(outputFilename, huffDecompressed);
+
+    }
 };

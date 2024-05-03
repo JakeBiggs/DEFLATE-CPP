@@ -79,7 +79,7 @@ vector<unsigned char> LZ77::working_compress(const vector<unsigned char> &input,
     return byteStream;
 }
 vector<unsigned char> LZ77::deque_compress(const vector<unsigned char>& input, int window_size) {
-    deque<LZ77Token> output;
+    vector<LZ77Token> output;
     unordered_map<int, deque<int>> window;
 
     int input_ptr = 0;
@@ -116,9 +116,11 @@ vector<unsigned char> LZ77::deque_compress(const vector<unsigned char>& input, i
 
         // Move the window
         for (int i = 0; i < match_length + 1; i++) {
-            if (window[input[input_ptr + i]].size() == window_size) {
+            // Remove indices that are no longer in the window
+            while (!window[input[input_ptr + i]].empty() && window[input[input_ptr + i]].front() < input_ptr - window_size + 1) {
                 window[input[input_ptr + i]].pop_front();
             }
+            // Add the current index to the deque
             window[input[input_ptr + i]].push_back(input_ptr + i);
         }
 
@@ -126,9 +128,7 @@ vector<unsigned char> LZ77::deque_compress(const vector<unsigned char>& input, i
     }
 
     // Convert the output to a byte stream
-    vector<unsigned char> byteStream = tokensToByteStream(output);
-
-    return byteStream;
+    return tokensToByteStream(output);
 }
 
 vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int window_size) {
@@ -177,66 +177,58 @@ vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int win
     return tokensToByteStream(output);
 }
 
-
-
-
-
-/*
-vector<unsigned char> LZ77::compress(const vector<unsigned char>& input, int window_size) {
+vector<unsigned char> LZ77::rabin_karp_compress(const vector<unsigned char>& input, int window_size) {
     vector<LZ77Token> output;
-    int n = input.size();
-
-    // Adjust window_size if input is smaller
-    if (n < window_size) {
-        window_size = n;
-    }
-
-    // Construct the compressed suffix array for the entire input
-    sdsl::int_vector<8> text(n);
-    for (int i = 0; i < n; ++i) {
-        text[i] = input[i];
-    }
-    sdsl::csa_wt<> csa;
-    sdsl::construct_im(csa, text, 0);
-
-// Construct the LCP array for the entire input
-    sdsl::lcp_wt<> lcp;
-    sdsl::construct_im(lcp, csa);
+    const int base = 257;
+    const long long modulus = 1e9 + 9;
 
     int i = 0; // i represents the current position in the input data
-    while (i < n) {
-        uint16_t match_distance = 0;
-        uint16_t match_length = 0;
 
-        // Find the longest match in the window
-        for (int j = max(0, i - window_size); j < i; ++j) {
-            int l = 0;
-            while (i + l < n && input[j + l] == input[i + l]) {
-                ++l;
-            }
-            if (l > match_length) {
-                match_length = l;
-                match_distance = i - j;
+    // Loop over the input data
+    while (i < input.size()) {
+        uint16_t longest_match_length = 0;
+        uint16_t longest_match_position = 0;
+
+        // Loop over the window from the end to the beginning
+        for (int j = i - 1; j >= max(0, i - window_size); j--) {
+            // Calculate the initial hash values and the highest power of the base
+            long long hash_lookahead = 0, hash_window = 0, power = 1;
+            int k = 0;
+            for (; k < input.size() - i && k < i - j; k++) {
+                hash_lookahead = (hash_lookahead * base + input[i + k]) % modulus;
+                hash_window = (hash_window * base + input[j + k]) % modulus;
+                if (k > 0) {
+                    power = (power * base) % modulus;
+                }
+
+                // If the hashes match and the substrings are equal, update the longest match length and position
+                if (hash_lookahead == hash_window && equal(input.begin() + j, input.begin() + j + k, input.begin() + i)) {
+                    longest_match_length = k;
+                    longest_match_position = j;
+                } else {
+                    break;
+                }
             }
         }
 
+        // Calculate the match distance
+        uint16_t match_distance = i - longest_match_position;
+
         // Get the next character after the match
-        unsigned char next = (i + match_length < n) ? input[i + match_length] : '\0';
+        unsigned char next = (i + longest_match_length < input.size()) ? input[i + longest_match_length] : '\0';
+
+        // Create a LZ77 token that contains the match distance, length, and the next character
+        LZ77Token token(match_distance, longest_match_length, next);
 
         // Add the LZ77 token to the output
-        output.push_back({match_distance, match_length, next});
+        output.push_back(token);
 
         // Move the window
-        i += match_length + 1;
+        i += token.length + 1;
     }
 
     return tokensToByteStream(output);
 }
- */
-
-
-
-
 
 vector<unsigned char> LZ77::decompressToBytes(const vector<LZ77Token>& compressed) {
     vector<unsigned char> output;
