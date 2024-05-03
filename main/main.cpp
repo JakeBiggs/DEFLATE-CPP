@@ -10,8 +10,8 @@ using namespace std;
 
 static void BM_Deflate(benchmark::State &s){
     //Define list of files to test
-    //vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt","bee-movie-200.txt","bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
-    vector<string> files = {"bee-movie.txt"};//,"bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
+    vector<string> files = {"bee-movie.txt", "bee-movie-10.txt","bee-movie-20.txt","bee-movie-30.txt","bee-movie-40.txt","bee-movie-50.txt","bee-movie-60.txt","bee-movie-70.txt","bee-movie-80.txt","bee-movie-90.txt","bee-movie-100.txt","bee-movie-200.txt","bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
+    //vector<string> files = {"bee-movie.txt"};//,"bee-movie-300.txt","bee-movie-400.txt","bee-movie-500.txt"};
     ofstream csvFile("results.csv");
     csvFile << "File, Compression Time, Decompression Time" << endl;
     int i = 0;

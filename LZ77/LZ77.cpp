@@ -68,11 +68,11 @@ vector<unsigned char> LZ77::working_compress(const vector<unsigned char> &input,
         // Move the window
         i += match_length + 1;
     }
-    ofstream tokenfile("tokens_working.txt");
-    for (const auto& token: output){
-        tokenfile << "Token: (Offset: "<< token.offset << ", Length: "<< token.length<<", Next: "<< token.next<<")\n";
-    }
-    tokenfile.close();
+    //ofstream tokenfile("tokens_working.txt");
+    //for (const auto& token: output){
+    //    tokenfile << "Token: (Offset: "<< token.offset << ", Length: "<< token.length<<", Next: "<< token.next<<")\n";
+    //}
+    //tokenfile.close();
     //Create a vector to hold a bytestream (needed for huffman)
     vector<unsigned char> byteStream = tokensToByteStream(output);
 
@@ -203,8 +203,10 @@ vector<unsigned char> LZ77::rabin_karp_compress(const vector<unsigned char>& inp
 
                 // If the hashes match and the substrings are equal, update the longest match length and position
                 if (hash_lookahead == hash_window && equal(input.begin() + j, input.begin() + j + k, input.begin() + i)) {
-                    longest_match_length = k;
-                    longest_match_position = j;
+                    if (k + 1 > longest_match_length) {
+                        longest_match_length = k + 1;
+                        longest_match_position = j;
+                    }
                 } else {
                     break;
                 }
@@ -226,6 +228,11 @@ vector<unsigned char> LZ77::rabin_karp_compress(const vector<unsigned char>& inp
         // Move the window
         i += token.length + 1;
     }
+    //ofstream tokenfile("tokens_RH.txt");
+    //for (const auto& token: output){
+     //   tokenfile << "Token: (Offset: "<< token.offset << ", Length: "<< token.length<<", Next: "<< token.next<<")\n";
+   // }
+    //tokenfile.close();
 
     return tokensToByteStream(output);
 }

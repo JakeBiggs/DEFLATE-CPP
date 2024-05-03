@@ -77,15 +77,6 @@ public:
     }
 
 
-
-
-
-
-
-
-
-
-
-
+    vector<unsigned char> rabin_karp_compress(const vector<unsigned char> &input, int window_size);
 };
 
