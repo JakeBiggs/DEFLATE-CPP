@@ -90,13 +90,27 @@ vector<unsigned char> Huffman::encode(const vector<unsigned char>& input, const 
     return encoded;
 }
 
-vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const unordered_map<unsigned char, string>& huffmanCodes) {
-    vector<unsigned char> decoded;
 
-    unordered_map<string, unsigned char> reversedHuffmanCodes;
-    for (const auto &pair : huffmanCodes) {
-        reversedHuffmanCodes[pair.second] = pair.first;
+
+TrieNode* Huffman::buildTrie(const unordered_map<unsigned char, string>& huffmanCodes) {
+    TrieNode* root = new TrieNode();
+    for (const auto& pair : huffmanCodes) {
+        TrieNode* node = root;
+        for (char bit : pair.second) {
+            int index = bit - '0';
+            if (node->children[index] == nullptr) {
+                node->children[index] = new TrieNode();
+            }
+            node = node->children[index];
+        }
+        node->isEndOfCode = true;
+        node->data = pair.first;
     }
+    return root;
+}
+
+vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, TrieNode* root) {
+    vector<unsigned char> decoded;
 
     // Always read the extra byte that contains the number of valid bits in the last byte
     size_t validBitsInLastByte = static_cast<size_t>(input.back());
@@ -105,7 +119,7 @@ vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const 
     size_t totalBits = 0;
     size_t totalBitsInOriginalData = 8 * (inputSize - 1) + validBitsInLastByte - (8 - validBitsInLastByte);
 
-    string code;
+    TrieNode* node = root;
     for (size_t i = 0; i < inputSize && totalBits < totalBitsInOriginalData; ++i) {
         unsigned char byte = input[i];
         size_t bits = (i == inputSize - 1) ? validBitsInLastByte : 8; // Use validBitsInLastByte for the last byte
@@ -113,19 +127,18 @@ vector<unsigned char> Huffman::decode(const vector<unsigned char>& input, const 
         for (size_t j = 0; j < bits && totalBits < totalBitsInOriginalData; ++j) {
             // Get the j-th bit of the byte
             bool bit = (byte >> (7 - j)) & 1;
-            code += bit ? '1' : '0';
+            node = node->children[bit];
 
-            auto iterator = reversedHuffmanCodes.find(code);
-            if (iterator != reversedHuffmanCodes.end()) {
-                decoded.push_back(iterator->second);
-                code.clear();
+            if (node->isEndOfCode) {
+                decoded.push_back(node->data);
+                node = root;
             }
         }
     }
 
     // Only throw an error if there are remaining bits that do not form a valid Huffman code
-    if (!code.empty() && reversedHuffmanCodes.find(code) == reversedHuffmanCodes.end()) {
-        cout << "Invalid Huffman Code (padding bits if all 0): " << code << endl;
+    if (node != root) {
+        cout << "Invalid Huffman Code (padding bits if all 0): " << endl;
         //throw runtime_error("Invalid Huffman code"); //Dont throw this unless u hate yourself, we all know you cant catch
     }
 

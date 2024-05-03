@@ -78,8 +78,58 @@ vector<unsigned char> LZ77::working_compress(const vector<unsigned char> &input,
 
     return byteStream;
 }
+vector<unsigned char> LZ77::deque_compress(const vector<unsigned char>& input, int window_size) {
+    deque<LZ77Token> output;
+    unordered_map<int, deque<int>> window;
 
-#include <sdsl/suffix_arrays.hpp>
+    int input_ptr = 0;
+
+    while (input_ptr < input.size()) {
+        uint16_t match_distance = 0;
+        uint16_t match_length = 0;
+        int best_match_index = -1;
+
+        // Search for a match in the sliding window
+        if (window.find(input[input_ptr]) != window.end()) {
+            for (auto it = window[input[input_ptr]].rbegin(); it != window[input[input_ptr]].rend(); ++it) {
+                int k = 0;
+                while (input_ptr + k < input.size() && input[*it + k] == input[input_ptr + k] && k < window_size) {
+                    k++;
+                }
+
+                if (k > match_length) {
+                    match_length = k;
+                    best_match_index = *it;
+                }
+            }
+
+            if (best_match_index != -1) {
+                match_distance = input_ptr - best_match_index;
+            }
+        }
+
+        // Get the next character after the match
+        unsigned char next = (input_ptr + match_length < input.size()) ? input[input_ptr + match_length] : '\0';
+
+        // Add the LZ77 token to the output
+        output.push_back({ match_distance, match_length, next });
+
+        // Move the window
+        for (int i = 0; i < match_length + 1; i++) {
+            if (window[input[input_ptr + i]].size() == window_size) {
+                window[input[input_ptr + i]].pop_front();
+            }
+            window[input[input_ptr + i]].push_back(input_ptr + i);
+        }
+
+        input_ptr += match_length + 1;
+    }
+
+    // Convert the output to a byte stream
+    vector<unsigned char> byteStream = tokensToByteStream(output);
+
+    return byteStream;
+}
 
 vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int window_size) {
     vector<LZ77Token> output;

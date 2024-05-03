@@ -27,6 +27,7 @@ public:
     void saveFile(const string& filename, const vector<unsigned char>& byteStream);
     vector<unsigned char> compress(const vector<unsigned char>& input, int window_size);
     vector<unsigned char> working_compress(const vector<unsigned char>& input, int window_size);
+    vector<unsigned char> deque_compress(const vector<unsigned char>& input, int window_size);
     vector<unsigned char> decompressToBytes(const vector<LZ77Token>& compressed);
     void decompressToFile(const vector<unsigned char>& compressedData, const string& filename);
     vector<unsigned char> tokensToByteStream(const vector<LZ77Token>& tokens);

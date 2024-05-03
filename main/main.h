@@ -195,8 +195,10 @@ void huffmanDecompress(string path, string outputFilename){
     vector<unsigned char> huffCompressed = readCompressedData(inputFile);
 
     cout << "Beginning Decompression..." << endl;
+    // Build the trie from the Huffman codes
+    TrieNode* root = huff.buildTrie(huffmanCodes);
     // Decompress the huffman encoding
-    vector<unsigned char> huffDecompressed = huff.decode(huffCompressed, huffmanCodes);
+    vector<unsigned char> huffDecompressed = huff.decode(huffCompressed, root);
     cout << "Huffman decoded" << endl;
     lz.saveFile(outputFilename, huffDecompressed);
 };
