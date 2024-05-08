@@ -34,11 +34,11 @@ public:
     vector<LZ77Token> byteStreamToTokens(const vector<unsigned char>& byteStream);
 
 
-    int sa_binary_search(const sdsl::csa_wt<>& sa, const vector<unsigned char>& pattern) {
+    pair<int, int> sa_binary_search(const sdsl::csa_wt<>& sa, const vector<unsigned char>& pattern, int current_position_in_data) {
         int left = 0;
-        int right = sa.size();
-        int longest_match = -1;
+        int right = sa.size() - 1;
         int longest_match_length = 0;
+        int longest_match_position = -1;
 
         while (left <= right) {
             int mid = left + (right - left) / 2;
@@ -58,12 +58,11 @@ public:
                     ++match_length;
                 }
                 if (match_length > longest_match_length) {
-                    longest_match = mid;
+                    longest_match_position = mid;
                     longest_match_length = match_length;
                 }
-                // Continue searching in both halves
+                // Continue searching in the right half
                 left = mid + 1;
-                right = mid - 1;
             } else if (cmp < 0) {
                 // If the pattern is less than the mid value, search in the left half
                 right = mid - 1;
@@ -73,9 +72,13 @@ public:
             }
         }
 
-        return longest_match;  // Return the position of the longest match
+        if (longest_match_position == -1) {
+            return {0, 0};  // No match found
+        } else {
+            int offset = sa[longest_match_position] - current_position_in_data;
+            return {offset, longest_match_length};  // Return the offset and length of the longest match
+        }
     }
-
 
     vector<unsigned char> rabin_karp_compress(const vector<unsigned char> &input, int window_size);
 };

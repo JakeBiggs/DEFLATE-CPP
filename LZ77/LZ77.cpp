@@ -11,7 +11,7 @@ vector<unsigned char> LZ77::loadFile(const string& filename) {
     }
 
     // Read the entire file into a vector of chars
-    vector<unsigned char> input((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    vector<unsigned char> input((istreambuf_iterator<char>(file)), istreambuf_iterator<char>()); //I really should change this
     file.close();
     return input;
 }
@@ -133,8 +133,7 @@ vector<unsigned char> LZ77::deque_compress(const vector<unsigned char>& input, i
 
 vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int window_size) {
     vector<LZ77Token> output;
-    ifstream file("bee-movie.txt", ios::binary);
-
+    ifstream file("bee-movie.txt", ios::binary); //For testing
     vector<unsigned char> text((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 
     // Construct lexicographically sorted suffix array
@@ -144,12 +143,12 @@ vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int win
     for (int i = 0; i < input.size(); ) {
         // Start with a pattern of one character
         vector<unsigned char> pattern(input.begin() + i, input.begin() + i + 1);
-        int match = -1;
+        pair<int, int> match = {0, 0};
 
         // Extend the pattern until no match is found
         while (i + pattern.size() <= input.size()) {
-            int new_match = sa_binary_search(csa, pattern);
-            if (new_match == -1) {
+            pair<int, int> new_match = sa_binary_search(csa, pattern, i);
+            if (new_match.second == 0) {
                 break;
             }
             match = new_match;
@@ -157,15 +156,15 @@ vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int win
         }
 
         // If no match is found for the single character pattern
-        if (match == -1) {
+        if (match.second == 0) {
             output.push_back(LZ77Token(0, 0, input[i]));
             ++i;
         } else {
             // Output token (position, length, S[j])
-            output.push_back(LZ77Token(match, pattern.size() - 1, input[i + pattern.size() - 1]));
+            output.push_back(LZ77Token(match.first, match.second, input[i + match.second]));
 
             // Move to the next position after the match
-            i += pattern.size();
+            i += match.second;
         }
     }
 
@@ -176,7 +175,6 @@ vector<unsigned char> LZ77::compress(const vector<unsigned char> &input, int win
     tokenfile.close();
     return tokensToByteStream(output);
 }
-
 vector<unsigned char> LZ77::rabin_karp_compress(const vector<unsigned char>& input, int window_size) {
     vector<LZ77Token> output;
     const int base = 257;
